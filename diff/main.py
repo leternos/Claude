@@ -16,30 +16,19 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from diffing import comparar_textos
+from extracao import ExtracaoErro, extrair_texto
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 app = FastAPI(
     title="Comparador de Arquivos",
-    description="Compara dois arquivos de texto com marcação estilo Word.",
+    description="Compara dois arquivos (texto, docx ou doc) com marcação estilo Word.",
 )
 
 # Limite por arquivo; diffs de arquivos maiores que isso ficam lentos e a
 # página de resultado, gigante.
 TAMANHO_MAXIMO = 5 * 1024 * 1024
-
-
-def _decodificar(dados: bytes) -> str | None:
-    """Decodifica bytes de texto; devolve ``None`` para conteúdo binário."""
-    if b"\x00" in dados:
-        return None
-    for codificacao in ("utf-8-sig", "utf-8", "latin-1"):
-        try:
-            return dados.decode(codificacao)
-        except UnicodeDecodeError:
-            continue
-    return None
 
 
 def _pagina_inicial(request: Request, erro: str | None = None, status: int = 200):
@@ -70,16 +59,17 @@ async def comparar(
                 status=413,
             )
 
-    texto_original = _decodificar(dados_original)
-    texto_modificado = _decodificar(dados_modificado)
-    if texto_original is None or texto_modificado is None:
-        nome = original.filename if texto_original is None else modificado.filename
-        return _pagina_inicial(
-            request,
-            erro=f"O arquivo “{nome}” não parece ser texto. "
-            "Envie arquivos de texto (txt, md, código, csv…).",
-            status=400,
-        )
+    textos: list[str] = []
+    for arquivo, dados in ((original, dados_original), (modificado, dados_modificado)):
+        try:
+            textos.append(extrair_texto(arquivo.filename or "", dados))
+        except ExtracaoErro as exc:
+            return _pagina_inicial(
+                request,
+                erro=f"Não deu para ler “{arquivo.filename}”: {exc}.",
+                status=400,
+            )
+    texto_original, texto_modificado = textos
 
     comparacao = comparar_textos(texto_original, texto_modificado)
     return templates.TemplateResponse(

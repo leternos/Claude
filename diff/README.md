@@ -43,10 +43,20 @@ final e alinhamento por similaridade).
 ## O que ele aceita
 
 - Arquivos de **texto** em geral: `.txt`, `.md`, código-fonte, `.csv`, etc.
-- Codificações UTF-8 (com ou sem BOM) e Latin-1.
+  (UTF-8 com ou sem BOM, caindo para Latin-1).
+- Documentos do **Word**: `.docx` (Word 2007+) e `.doc` (Word 97–2003).
+  O texto é extraído — um parágrafo por linha, preservando tabs e quebras —
+  e comparado como os demais formatos. Dá inclusive para comparar um `.doc`
+  com um `.docx` ou com um `.txt`.
 - Até **5 MB** por arquivo.
-- Arquivos binários são rejeitados com uma mensagem amigável (formatos como
-  `.docx`/`.pdf` precisariam de extração de texto antes — não é o caso aqui).
+- Outros binários (`.pdf`, imagens…) são rejeitados com mensagem amigável.
+
+A extração fica em [`extracao.py`](extracao.py): `.docx` é lido do
+`word/document.xml` dentro do pacote ZIP; `.doc` segue a *piece table* do
+formato Word 97 (fluxos `WordDocument`/`0Table`-`1Table` no contêiner OLE,
+com trechos em CP-1252 ou UTF-16LE), como fazem o antiword e o wvware. A
+versão estática tem o mesmo suporte, portado para JavaScript — incluindo um
+leitor de ZIP (com `DecompressionStream`) e de contêiner OLE/CFB.
 
 ## Estrutura
 
@@ -54,12 +64,15 @@ final e alinhamento por similaridade).
 diff/
 ├── main.py            # rotas FastAPI (upload + renderização)
 ├── diffing.py         # motor de comparação (difflib, linha + palavra)
+├── extracao.py        # extração de texto: txt, .docx e .doc
 ├── comparador.html    # versão estática: app completo num único HTML (JS)
 ├── templates/
 │   ├── base.html      # layout e CSS estilo Word
 │   ├── index.html     # formulário de upload com arrastar-e-soltar
 │   └── resultado.html # visões "Documento marcado" e "Lado a lado"
 ├── test_diffing.py    # testes do motor de comparação
+├── test_extracao.py   # testes da extração (com fixtures reais em testdata/)
+├── testdata/          # contrato fictício em .txt, .docx e .doc (LibreOffice)
 └── requirements.txt
 ```
 
@@ -67,5 +80,6 @@ diff/
 
 ```bash
 cd diff
-python test_diffing.py   # ou: pytest test_diffing.py
+python test_diffing.py    # motor de comparação
+python test_extracao.py   # extração txt/docx/doc (ou: pytest)
 ```

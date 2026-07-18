@@ -219,10 +219,12 @@
     <div class="cartao">
       <h2>Comparar dois arquivos</h2>
       <p class="descricao">
-        Escolha o arquivo original e o modificado. O resultado sai com marcação
-        no estilo do Word: <span class="seg-del">vermelho tachado</span> para o
-        que saiu, <span class="seg-add">verde sublinhado</span> para o que
-        entrou e destaque amarelo nas linhas alteradas.
+        Escolha o arquivo original e o modificado — texto (txt, md, código,
+        csv…) ou Word (<strong>.docx</strong> e <strong>.doc</strong>). O
+        resultado sai com marcação no estilo do Word:
+        <span class="seg-del">vermelho tachado</span> para o que saiu,
+        <span class="seg-add">verde sublinhado</span> para o que entrou e
+        destaque amarelo nas linhas alteradas.
       </p>
       <div class="erro oculto" id="erro"></div>
       <div class="zonas">
@@ -591,6 +593,312 @@ function compararTextos(textoOriginal, textoModificado) {
 }
 /* ===== FIM-MOTOR ===== */
 
+/* ===== INICIO-EXTRACAO =====
+ * Extração de texto de .docx (ZIP + WordprocessingML) e .doc (Word 97-2003,
+ * contêiner OLE/CFB com piece table), espelhando extracao.py.
+ */
+
+async function inflateRaw(dados) {
+  if (typeof DecompressionStream === "undefined") {
+    throw new Error(
+      "Este navegador não sabe descompactar .docx — atualize-o e tente de novo."
+    );
+  }
+  const fluxo = new Blob([dados]).stream()
+    .pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(fluxo).arrayBuffer());
+}
+
+/* Lê uma entrada de um ZIP (o suficiente para pacotes .docx). */
+async function lerEntradaZip(buffer, nomeProcurado) {
+  const bytes = new Uint8Array(buffer);
+  const dv = new DataView(buffer);
+  // EOCD: assinatura 0x06054b50, varrida a partir do fim
+  let eocd = -1;
+  const limite = Math.max(0, bytes.length - 65558);
+  for (let i = bytes.length - 22; i >= limite; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("o arquivo .docx está corrompido ou incompleto");
+  const totalEntradas = dv.getUint16(eocd + 10, true);
+  let pos = dv.getUint32(eocd + 16, true); // início do diretório central
+  const decodificadorNome = new TextDecoder("utf-8");
+  for (let e = 0; e < totalEntradas; e++) {
+    if (dv.getUint32(pos, true) !== 0x02014b50) break;
+    const metodo = dv.getUint16(pos + 10, true);
+    const tamanhoComprimido = dv.getUint32(pos + 20, true);
+    const tamNome = dv.getUint16(pos + 28, true);
+    const tamExtra = dv.getUint16(pos + 30, true);
+    const tamComentario = dv.getUint16(pos + 32, true);
+    const offsetLocal = dv.getUint32(pos + 42, true);
+    const nome = decodificadorNome.decode(bytes.subarray(pos + 46, pos + 46 + tamNome));
+    if (nome === nomeProcurado) {
+      if (dv.getUint32(offsetLocal, true) !== 0x04034b50) {
+        throw new Error("o arquivo .docx está corrompido ou incompleto");
+      }
+      const tamNomeLocal = dv.getUint16(offsetLocal + 26, true);
+      const tamExtraLocal = dv.getUint16(offsetLocal + 28, true);
+      const inicio = offsetLocal + 30 + tamNomeLocal + tamExtraLocal;
+      const comprimido = bytes.subarray(inicio, inicio + tamanhoComprimido);
+      if (metodo === 0) return comprimido.slice();
+      if (metodo === 8) return await inflateRaw(comprimido);
+      throw new Error("o arquivo .docx usa compactação não suportada");
+    }
+    pos += 46 + tamNome + tamExtra + tamComentario;
+  }
+  throw new Error("o arquivo é um pacote ZIP, mas não um documento do Word");
+}
+
+function decodificarEntidadesXml(texto) {
+  return texto.replace(/&(amp|lt|gt|quot|apos|#x?[0-9a-fA-F]+);/g, (_, ent) => {
+    if (ent === "amp") return "&";
+    if (ent === "lt") return "<";
+    if (ent === "gt") return ">";
+    if (ent === "quot") return '"';
+    if (ent === "apos") return "'";
+    const codigo = ent[1] === "x" || ent[1] === "X"
+      ? parseInt(ent.slice(2), 16)
+      : parseInt(ent.slice(1), 10);
+    return String.fromCodePoint(codigo);
+  });
+}
+
+/* Extrai o texto de word/document.xml: um parágrafo (w:p) por linha; dentro
+ * dos runs (w:r), w:t é texto, w:tab é tabulação e w:br/w:cr são quebras. */
+function extrairTextoDocumentXml(xml) {
+  const linhas = [];
+  let paragrafo = null;
+  let profundidadeRun = 0;
+  let dentroDeT = false;
+  for (const token of xml.match(/<[^>]+>|[^<]+/g) || []) {
+    if (token[0] === "<") {
+      const fechamento = token[1] === "/";
+      const autoFechada = token.endsWith("/>");
+      const nome = token.replace(/^<\/?/, "").replace(/[\s/>][\s\S]*$/, "");
+      if (nome === "w:p") {
+        if (fechamento) {
+          if (paragrafo !== null) linhas.push(paragrafo);
+          paragrafo = null;
+        } else if (autoFechada) {
+          linhas.push("");
+        } else {
+          paragrafo = "";
+        }
+      } else if (nome === "w:r") {
+        if (fechamento) profundidadeRun = Math.max(0, profundidadeRun - 1);
+        else if (!autoFechada) profundidadeRun++;
+      } else if (nome === "w:t") {
+        if (fechamento) dentroDeT = false;
+        else if (!autoFechada) dentroDeT = profundidadeRun > 0;
+      } else if (nome === "w:tab") {
+        if (!fechamento && profundidadeRun > 0 && paragrafo !== null) paragrafo += "\t";
+      } else if (nome === "w:br" || nome === "w:cr") {
+        if (!fechamento && profundidadeRun > 0 && paragrafo !== null) paragrafo += "\n";
+      }
+    } else if (dentroDeT && paragrafo !== null) {
+      paragrafo += decodificarEntidadesXml(token);
+    }
+  }
+  return linhas.join("\n");
+}
+
+async function extrairDocx(buffer) {
+  const xmlBytes = await lerEntradaZip(buffer, "word/document.xml");
+  return extrairTextoDocumentXml(new TextDecoder("utf-8").decode(xmlBytes));
+}
+
+/* Leitor mínimo de contêiner OLE/CFB (o formato do .doc legado). */
+function lerCfb(buffer) {
+  const dv = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
+  const tamSetor = 1 << dv.getUint16(0x1e, true);
+  const tamMini = 1 << dv.getUint16(0x20, true);
+  const inicioDiretorio = dv.getInt32(0x30, true);
+  const corteMini = dv.getUint32(0x38, true);
+  const inicioMiniFat = dv.getInt32(0x3c, true);
+  const inicioDifat = dv.getInt32(0x44, true);
+
+  const deslocamentoSetor = (setor) => (setor + 1) * tamSetor;
+
+  // FAT: 109 setores listados no cabeçalho + correntes DIFAT extras
+  const setoresFat = [];
+  for (let i = 0; i < 109; i++) {
+    const s = dv.getInt32(0x4c + i * 4, true);
+    if (s >= 0) setoresFat.push(s);
+  }
+  const porSetor = tamSetor / 4;
+  for (let difat = inicioDifat; difat >= 0; ) {
+    const base = deslocamentoSetor(difat);
+    for (let i = 0; i < porSetor - 1; i++) {
+      const s = dv.getInt32(base + i * 4, true);
+      if (s >= 0) setoresFat.push(s);
+    }
+    difat = dv.getInt32(base + (porSetor - 1) * 4, true);
+  }
+  const fat = [];
+  for (const s of setoresFat) {
+    const base = deslocamentoSetor(s);
+    for (let i = 0; i < porSetor; i++) fat.push(dv.getInt32(base + i * 4, true));
+  }
+
+  function lerCorrente(inicio) {
+    const partes = [];
+    let total = 0;
+    for (let s = inicio; s >= 0; s = fat[s]) {
+      const base = deslocamentoSetor(s);
+      partes.push(bytes.subarray(base, base + tamSetor));
+      total += tamSetor;
+      if (partes.length > fat.length + 1) throw new Error("o arquivo .doc está corrompido");
+    }
+    const saida = new Uint8Array(total);
+    partes.forEach((p, i) => saida.set(p, i * tamSetor));
+    return saida;
+  }
+
+  // Diretório: entradas de 128 bytes, nomes em UTF-16LE
+  const diretorio = lerCorrente(inicioDiretorio);
+  const dvDir = new DataView(diretorio.buffer, diretorio.byteOffset, diretorio.byteLength);
+  const entradas = [];
+  for (let off = 0; off + 128 <= diretorio.length; off += 128) {
+    const tamNome = dvDir.getUint16(off + 64, true);
+    const tipo = diretorio[off + 66];
+    if (tipo === 0 || tamNome < 2) continue;
+    const nome = new TextDecoder("utf-16le").decode(
+      diretorio.subarray(off, off + tamNome - 2)
+    );
+    entradas.push({
+      nome,
+      tipo,
+      inicio: dvDir.getInt32(off + 0x74, true),
+      tamanho: dvDir.getUint32(off + 0x78, true),
+    });
+  }
+  const raiz = entradas.find((e) => e.tipo === 5);
+  if (!raiz) throw new Error("o arquivo .doc está corrompido");
+
+  // MiniFAT e ministream (para fluxos menores que o corte, tipicamente 4 KB)
+  const miniFat = [];
+  if (inicioMiniFat >= 0) {
+    const dados = lerCorrente(inicioMiniFat);
+    const dvMini = new DataView(dados.buffer, dados.byteOffset, dados.byteLength);
+    for (let i = 0; i + 4 <= dados.length; i += 4) miniFat.push(dvMini.getInt32(i, true));
+  }
+  const ministream = raiz.inicio >= 0 ? lerCorrente(raiz.inicio) : new Uint8Array(0);
+
+  function abrirFluxo(nome) {
+    const entrada = entradas.find((e) => e.tipo === 2 && e.nome === nome);
+    if (!entrada) return null;
+    if (entrada.tamanho >= corteMini) {
+      return lerCorrente(entrada.inicio).subarray(0, entrada.tamanho);
+    }
+    const saida = new Uint8Array(entrada.tamanho);
+    let escrito = 0;
+    for (let s = entrada.inicio; s >= 0 && escrito < entrada.tamanho; s = miniFat[s]) {
+      const pedaco = ministream.subarray(s * tamMini, (s + 1) * tamMini);
+      const usar = Math.min(pedaco.length, entrada.tamanho - escrito);
+      saida.set(pedaco.subarray(0, usar), escrito);
+      escrito += usar;
+    }
+    return saida;
+  }
+
+  return { abrirFluxo };
+}
+
+/* Normaliza os caracteres de controle do Word 97 (mesma regra do Python). */
+function limparTextoDoc(bruto) {
+  const saida = [];
+  const pilhaCampo = [];
+  for (const ch of bruto) {
+    const codigo = ch.codePointAt(0);
+    if (codigo === 0x13) { pilhaCampo.push("instrucao"); continue; }
+    if (codigo === 0x14) {
+      if (pilhaCampo.length) pilhaCampo[pilhaCampo.length - 1] = "resultado";
+      continue;
+    }
+    if (codigo === 0x15) { pilhaCampo.pop(); continue; }
+    if (pilhaCampo.includes("instrucao")) continue;
+    if (ch === "\r" || ch === "\n" || codigo === 0x07 || codigo === 0x0b || codigo === 0x0c) {
+      saida.push("\n");
+    } else if (codigo === 0x1e) {
+      saida.push("-");
+    } else if (codigo === 0x1f || codigo === 0xfeff || (codigo < 0x20 && ch !== "\t")) {
+      continue;
+    } else {
+      saida.push(ch);
+    }
+  }
+  return saida.join("");
+}
+
+function extrairDoc(buffer) {
+  const cfb = lerCfb(buffer);
+  const word = cfb.abrirFluxo("WordDocument");
+  if (!word || word.length < 0x200) {
+    throw new Error("o arquivo não contém um documento do Word");
+  }
+  const dvWord = new DataView(word.buffer, word.byteOffset, word.byteLength);
+  if (dvWord.getUint16(0, true) !== 0xa5ec) {
+    throw new Error("o arquivo não parece ser um .doc do Word");
+  }
+  const flags = dvWord.getUint16(0x0a, true);
+  const tabela = cfb.abrirFluxo(flags & 0x0200 ? "1Table" : "0Table");
+  if (!tabela) throw new Error("o arquivo .doc está incompleto (sem fluxo de tabela)");
+  const dvTabela = new DataView(tabela.buffer, tabela.byteOffset, tabela.byteLength);
+
+  const ccpTexto = dvWord.getUint32(0x004c, true);
+  const fcClx = dvWord.getUint32(0x01a2, true);
+  const lcbClx = dvWord.getUint32(0x01a6, true);
+
+  // pula blocos Prc (0x01) até o Pcdt (0x02) com a piece table
+  let pos = fcClx;
+  const fimClx = fcClx + lcbClx;
+  while (pos < fimClx && tabela[pos] === 0x01) {
+    pos += 3 + dvTabela.getUint16(pos + 1, true);
+  }
+  if (pos >= fimClx || tabela[pos] !== 0x02) {
+    throw new Error("a estrutura interna do .doc não foi reconhecida");
+  }
+  const lcbPlc = dvTabela.getUint32(pos + 1, true);
+  const plcInicio = pos + 5;
+  const n = Math.floor((lcbPlc - 4) / 12);
+  if (n <= 0) return "";
+
+  const cps = [];
+  for (let i = 0; i <= n; i++) cps.push(dvTabela.getUint32(plcInicio + i * 4, true));
+  const cp1252 = new TextDecoder("windows-1252");
+  const utf16 = new TextDecoder("utf-16le");
+  const trechos = [];
+  for (let i = 0; i < n; i++) {
+    const fcBruto = dvTabela.getUint32(plcInicio + (n + 1) * 4 + i * 8 + 2, true);
+    const quantidade = cps[i + 1] - cps[i];
+    if (fcBruto & 0x40000000) {
+      const inicio = (fcBruto & 0x3fffffff) >>> 1;
+      trechos.push(cp1252.decode(word.subarray(inicio, inicio + quantidade)));
+    } else {
+      const inicio = fcBruto & 0x3fffffff;
+      trechos.push(utf16.decode(word.subarray(inicio, inicio + 2 * quantidade)));
+    }
+  }
+  return limparTextoDoc(trechos.join("").slice(0, ccpTexto));
+}
+
+/* Roteia pelo conteúdo: docx (ZIP), doc (OLE) ou texto puro. */
+async function extrairTexto(nome, buffer) {
+  const bytes = new Uint8Array(buffer);
+  const ehZip = bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+  const ehOle = bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0;
+  if (ehZip) return await extrairDocx(buffer);
+  if (ehOle) return extrairDoc(buffer);
+  if (bytes.includes(0)) return null;
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
+}
+/* ===== FIM-EXTRACAO ===== */
+
 /* ---------- interface ---------- */
 (function () {
   "use strict";
@@ -646,31 +954,24 @@ function compararTextos(textoOriginal, textoModificado) {
   const atualizarOriginal = ligarZona("zona-original", campos.original, "nome-original");
   const atualizarModificado = ligarZona("zona-modificado", campos.modificado, "nome-modificado");
 
-  /* Decodifica como o app FastAPI: rejeita binário, tenta UTF-8, cai para Latin-1. */
-  function decodificar(buffer) {
-    const bytes = new Uint8Array(buffer);
-    if (bytes.includes(0)) return null;
-    try {
-      return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    } catch {
-      return new TextDecoder("windows-1252").decode(bytes);
+  async function lerArquivo(arquivo) {
+    const buffer = await arquivo.arrayBuffer();
+    if (buffer.byteLength > TAMANHO_MAXIMO) {
+      throw new Error(`O arquivo “${arquivo.name}” passa do limite de 5 MB.`);
     }
-  }
-
-  function lerArquivo(arquivo) {
-    return arquivo.arrayBuffer().then((buffer) => {
-      if (buffer.byteLength > TAMANHO_MAXIMO) {
-        throw new Error(`O arquivo “${arquivo.name}” passa do limite de 5 MB.`);
-      }
-      const texto = decodificar(buffer);
-      if (texto === null) {
-        throw new Error(
-          `O arquivo “${arquivo.name}” não parece ser texto. ` +
-          "Envie arquivos de texto (txt, md, código, csv…)."
-        );
-      }
-      return texto;
-    });
+    let texto;
+    try {
+      texto = await extrairTexto(arquivo.name, buffer);
+    } catch (excecao) {
+      throw new Error(`Não deu para ler “${arquivo.name}”: ${excecao.message}.`);
+    }
+    if (texto === null) {
+      throw new Error(
+        `O arquivo “${arquivo.name}” não parece ser texto nem documento do ` +
+        "Word (txt, md, código, csv, docx, doc…)."
+      );
+    }
+    return texto;
   }
 
   function escapar(texto) {

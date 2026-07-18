@@ -5,8 +5,9 @@ e pequenos aplicativos.
 
 ## `/diff` — Comparador de Arquivos
 
-Aplicação [FastAPI](diff/) com interface HTML para comparar dois arquivos de
-texto, com marcação no estilo "Controlar Alterações" do Word: vermelho tachado
+Aplicação [FastAPI](diff/) com interface HTML para comparar dois arquivos —
+texto ou Word (`.docx` e `.doc`) — com marcação no estilo "Controlar
+Alterações" do Word: vermelho tachado
 para o que saiu, verde sublinhado para o que entrou e destaque amarelo (com
 diff palavra a palavra) nas linhas alteradas. Inclui visão unificada
 ("Documento marcado") e visão lado a lado. Veja o [README do app](diff/README.md).
