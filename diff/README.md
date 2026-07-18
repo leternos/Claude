@@ -27,6 +27,19 @@ uvicorn main:app --reload
 Depois abra <http://127.0.0.1:8000>, escolha (ou arraste) os dois arquivos e
 clique em **Comparar**.
 
+## Versão estática (sem servidor)
+
+O arquivo [`comparador.html`](comparador.html) é uma **versão exportada do
+app inteiro num único HTML**: o motor de comparação foi portado de Python
+para JavaScript e roda 100% no navegador — os arquivos nunca saem da sua
+máquina. Basta abrir o arquivo com dois cliques (ou hospedá-lo em qualquer
+lugar, como GitHub Pages). Mesma interface, mesmas cores, mesmas duas visões.
+
+A paridade entre os dois motores é garantida por vetores de teste: a saída
+do motor Python (`diffing.py`) é comparada campo a campo com a do motor JS
+para os mesmos pares de entrada (16 casos, incluindo CRLF, acentos, newline
+final e alinhamento por similaridade).
+
 ## O que ele aceita
 
 - Arquivos de **texto** em geral: `.txt`, `.md`, código-fonte, `.csv`, etc.
@@ -41,6 +54,7 @@ clique em **Comparar**.
 diff/
 ├── main.py            # rotas FastAPI (upload + renderização)
 ├── diffing.py         # motor de comparação (difflib, linha + palavra)
+├── comparador.html    # versão estática: app completo num único HTML (JS)
 ├── templates/
 │   ├── base.html      # layout e CSS estilo Word
 │   ├── index.html     # formulário de upload com arrastar-e-soltar

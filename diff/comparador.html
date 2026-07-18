@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comparador de Arquivos — versão estática</title>
+<style>
+  :root {
+    --fundo: #f3f2f1;            /* cinza de aplicativo Office */
+    --papel: #ffffff;
+    --tinta: #252423;
+    --tinta-suave: #605e5c;
+    --borda: #e1dfdd;
+    --azul: #2b579a;             /* azul Word */
+    --vermelho: #c43e1c;         /* remoções */
+    --vermelho-fundo: #fdefec;
+    --verde: #107c41;            /* adições */
+    --verde-fundo: #e9f5ee;
+    --ambar-fundo: #fff8e6;      /* linhas alteradas */
+    --ambar-barra: #f2c811;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fundo);
+    color: var(--tinta);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  header.topo {
+    background: var(--azul);
+    color: #fff;
+    padding: 0.7rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  header.topo .logotipo {
+    background: #fff;
+    color: var(--azul);
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 0.1rem 0.45rem;
+    font-size: 1.05rem;
+  }
+  header.topo h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+  header.topo .selo {
+    margin-left: auto;
+    font-size: 0.75rem;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 999px;
+    padding: 0.15rem 0.7rem;
+  }
+  main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  .oculto { display: none !important; }
+
+  /* ---------- tela inicial ---------- */
+  .cartao {
+    background: var(--papel);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    padding: 2rem;
+    max-width: 860px;
+    margin: 2rem auto;
+  }
+  .cartao h2 { margin-top: 0; font-weight: 600; }
+  .cartao p.descricao { color: var(--tinta-suave); margin-bottom: 1.6rem; }
+  .erro {
+    background: var(--vermelho-fundo);
+    border: 1px solid var(--vermelho);
+    color: var(--vermelho);
+    border-radius: 6px;
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.2rem;
+  }
+  .zonas { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  .zona {
+    flex: 1 1 260px;
+    border: 2px dashed var(--borda);
+    border-radius: 8px;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .zona:hover, .zona.arrastando { border-color: var(--azul); background: #f5f8fd; }
+  .zona.preenchida { border-style: solid; border-color: var(--verde); background: var(--verde-fundo); }
+  .zona .rotulo { font-weight: 600; margin-bottom: 0.3rem; }
+  .zona .dica { color: var(--tinta-suave); font-size: 0.85rem; }
+  .zona .nome-arquivo {
+    margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600;
+    color: var(--verde); word-break: break-all;
+  }
+  .zona input[type="file"] { display: none; }
+  .acoes { margin-top: 1.6rem; text-align: center; }
+  button.principal {
+    background: var(--azul); color: #fff; border: none; border-radius: 6px;
+    font-size: 1rem; font-weight: 600; padding: 0.7rem 2.2rem; cursor: pointer;
+  }
+  button.principal:hover { background: #1e4e8c; }
+  button.principal:disabled { background: #a6a6a6; cursor: not-allowed; }
+  .privacidade {
+    text-align: center; color: var(--tinta-suave); font-size: 0.8rem; margin-top: 1.2rem;
+  }
+
+  /* ---------- resultado ---------- */
+  .barra-resultado {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+  .barra-resultado .arquivos { font-size: 0.95rem; color: var(--tinta-suave); }
+  .barra-resultado .arquivos strong { color: var(--tinta); }
+  .distintivos { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-left: auto; }
+  .distintivo {
+    border-radius: 999px; padding: 0.25rem 0.8rem;
+    font-size: 0.85rem; font-weight: 600; border: 1px solid transparent;
+  }
+  .distintivo.add { background: var(--verde-fundo); color: var(--verde); border-color: var(--verde); }
+  .distintivo.del { background: var(--vermelho-fundo); color: var(--vermelho); border-color: var(--vermelho); }
+  .distintivo.alt { background: var(--ambar-fundo); color: #8a6d00; border-color: var(--ambar-barra); }
+  a.voltar, button.voltar {
+    color: var(--azul); font-weight: 600; text-decoration: none;
+    background: none; border: none; cursor: pointer; font-size: inherit; padding: 0;
+    font-family: inherit;
+  }
+  a.voltar:hover, button.voltar:hover { text-decoration: underline; }
+
+  .legenda {
+    display: flex; gap: 1.2rem; flex-wrap: wrap;
+    font-size: 0.85rem; color: var(--tinta-suave); margin-bottom: 1rem;
+  }
+  .legenda .seg-del, .legenda .seg-add { padding: 0 0.2rem; }
+
+  .abas { display: flex; gap: 0.4rem; }
+  .abas button {
+    border: 1px solid var(--borda); border-bottom: none;
+    background: #faf9f8; color: var(--tinta-suave);
+    padding: 0.5rem 1.2rem; border-radius: 6px 6px 0 0;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  }
+  .abas button.ativa { background: var(--papel); color: var(--azul); }
+
+  .folha {
+    background: var(--papel);
+    border: 1px solid var(--borda);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 0 6px 6px 6px;
+    overflow-x: auto;
+  }
+  .visao { display: none; }
+  .visao.visivel { display: block; }
+
+  .documento { padding: 1.2rem 0; min-width: 100%; }
+  .linha { display: flex; align-items: baseline; }
+  .linha .num {
+    flex: 0 0 3.2rem; text-align: right; padding-right: 0.8rem;
+    color: #a19f9d; font-size: 0.75rem; user-select: none;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  .linha .conteudo {
+    flex: 1; padding: 0.1rem 1rem 0.1rem 0.4rem;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.88rem; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-word;
+    border-left: 3px solid transparent;
+  }
+  .linha .conteudo:empty::before { content: "\00a0"; }
+
+  .linha.del .conteudo { background: var(--vermelho-fundo); border-left-color: var(--vermelho); }
+  .linha.add .conteudo { background: var(--verde-fundo); border-left-color: var(--verde); }
+  .linha.alterada .conteudo { background: var(--ambar-fundo); border-left-color: var(--ambar-barra); }
+
+  .seg-del { color: var(--vermelho); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  .seg-add { color: var(--verde); text-decoration: underline; text-decoration-thickness: 1.5px; }
+
+  table.duplo { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.duplo col.gutter { width: 3.2rem; }
+  table.duplo thead th {
+    text-align: left; font-size: 0.85rem; color: var(--tinta-suave);
+    padding: 0.6rem 1rem; border-bottom: 1px solid var(--borda);
+    background: #faf9f8; font-weight: 600;
+  }
+  table.duplo td { vertical-align: top; }
+  table.duplo td.num {
+    text-align: right; padding: 0.1rem 0.8rem 0.1rem 0;
+    color: #a19f9d; font-size: 0.75rem; user-select: none;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  table.duplo td.conteudo {
+    padding: 0.1rem 1rem 0.1rem 0.4rem;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.88rem; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-word;
+    border-left: 3px solid transparent;
+  }
+  table.duplo td.conteudo:empty::before { content: "\00a0"; }
+  table.duplo td.meio { border-left: 1px solid var(--borda); }
+  td.conteudo.del { background: var(--vermelho-fundo); border-left-color: var(--vermelho); }
+  td.conteudo.add { background: var(--verde-fundo); border-left-color: var(--verde); }
+  td.conteudo.alterada { background: var(--ambar-fundo); border-left-color: var(--ambar-barra); }
+  td.conteudo.vazia { background: repeating-linear-gradient(45deg, #fafafa, #fafafa 6px, #f1f1f1 6px, #f1f1f1 12px); }
+
+  .aviso-identicos {
+    background: var(--verde-fundo); border: 1px solid var(--verde); color: var(--verde);
+    border-radius: 6px; padding: 0.7rem 1rem; margin-bottom: 1rem; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<header class="topo">
+  <span class="logotipo">D</span>
+  <h1>Comparador de Arquivos</h1>
+  <span class="selo">100% no navegador — nada é enviado</span>
+</header>
+<main>
+  <div id="tela-inicial">
+    <div class="cartao">
+      <h2>Comparar dois arquivos</h2>
+      <p class="descricao">
+        Escolha o arquivo original e o modificado. O resultado sai com marcação
+        no estilo do Word: <span class="seg-del">vermelho tachado</span> para o
+        que saiu, <span class="seg-add">verde sublinhado</span> para o que
+        entrou e destaque amarelo nas linhas alteradas.
+      </p>
+      <div class="erro oculto" id="erro"></div>
+      <div class="zonas">
+        <label class="zona" id="zona-original">
+          <div class="rotulo">Arquivo original</div>
+          <div class="dica">Clique para escolher ou arraste o arquivo até aqui</div>
+          <div class="nome-arquivo" id="nome-original"></div>
+          <input type="file" id="campo-original">
+        </label>
+        <label class="zona" id="zona-modificado">
+          <div class="rotulo">Arquivo modificado</div>
+          <div class="dica">Clique para escolher ou arraste o arquivo até aqui</div>
+          <div class="nome-arquivo" id="nome-modificado"></div>
+          <input type="file" id="campo-modificado">
+        </label>
+      </div>
+      <div class="acoes">
+        <button type="button" class="principal" id="botao-comparar" disabled>Comparar</button>
+      </div>
+      <p class="privacidade">
+        Esta página funciona sem servidor: os arquivos são lidos e comparados
+        localmente, no seu navegador.
+      </p>
+    </div>
+  </div>
+
+  <div id="tela-resultado" class="oculto">
+    <div class="barra-resultado">
+      <div class="arquivos">
+        <strong id="rotulo-original"></strong> → <strong id="rotulo-modificado"></strong>
+        &nbsp;·&nbsp; <button type="button" class="voltar" id="botao-nova">Nova comparação</button>
+      </div>
+      <div class="distintivos">
+        <span class="distintivo add" id="dist-add"></span>
+        <span class="distintivo del" id="dist-del"></span>
+        <span class="distintivo alt" id="dist-alt"></span>
+      </div>
+    </div>
+    <div class="aviso-identicos oculto" id="aviso-identicos">
+      Os dois arquivos têm o mesmo conteúdo — nenhuma diferença encontrada.
+    </div>
+    <div class="legenda">
+      <span><span class="seg-del">texto removido</span></span>
+      <span><span class="seg-add">texto adicionado</span></span>
+      <span><span style="background: var(--ambar-fundo); padding: 0 0.3rem;">linha alterada</span></span>
+    </div>
+    <div class="abas">
+      <button type="button" id="aba-marcado" class="ativa">Documento marcado</button>
+      <button type="button" id="aba-duplo">Lado a lado</button>
+    </div>
+    <div class="folha">
+      <div class="visao visivel" id="visao-marcado">
+        <div class="documento" id="documento-marcado"></div>
+      </div>
+      <div class="visao" id="visao-duplo">
+        <table class="duplo">
+          <colgroup>
+            <col class="gutter"><col><col class="gutter"><col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th colspan="2" id="cabecalho-original"></th>
+              <th colspan="2" class="meio" id="cabecalho-modificado"></th>
+            </tr>
+          </thead>
+          <tbody id="corpo-duplo"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ===== INICIO-MOTOR =====
+ * Porte fiel de diffing.py (Python/difflib) para JavaScript.
+ * Comparação em dois níveis: linhas e, dentro de pares alterados, tokens
+ * (palavras/espaços). Blocos "replace" são alinhados pelo par de linhas mais
+ * similar, como no difflib.Differ.
+ */
+
+const LIMIAR_SIMILARIDADE = 0.4;
+const MAX_COMBINACOES = 40000;
+
+/* Reimplementação do difflib.SequenceMatcher (com autojunk desligado). */
+class SequenceMatcher {
+  constructor(a, b) {
+    this.a = a;
+    this.b = b;
+    this.b2j = new Map();
+    b.forEach((elemento, j) => {
+      const lista = this.b2j.get(elemento);
+      if (lista) lista.push(j);
+      else this.b2j.set(elemento, [j]);
+    });
+    this._blocos = null;
+  }
+
+  encontrarMaiorCasamento(alo, ahi, blo, bhi) {
+    let besti = alo, bestj = blo, bestsize = 0;
+    let j2len = new Map();
+    for (let i = alo; i < ahi; i++) {
+      const novo = new Map();
+      const indices = this.b2j.get(this.a[i]) || [];
+      for (const j of indices) {
+        if (j < blo) continue;
+        if (j >= bhi) break;
+        const k = (j2len.get(j - 1) || 0) + 1;
+        novo.set(j, k);
+        if (k > bestsize) {
+          besti = i - k + 1;
+          bestj = j - k + 1;
+          bestsize = k;
+        }
+      }
+      j2len = novo;
+    }
+    return [besti, bestj, bestsize];
+  }
+
+  blocosCasados() {
+    if (this._blocos) return this._blocos;
+    const fila = [[0, this.a.length, 0, this.b.length]];
+    const achados = [];
+    while (fila.length) {
+      const [alo, ahi, blo, bhi] = fila.pop();
+      const [i, j, k] = this.encontrarMaiorCasamento(alo, ahi, blo, bhi);
+      if (k) {
+        achados.push([i, j, k]);
+        fila.push([alo, i, blo, j]);
+        fila.push([i + k, ahi, j + k, bhi]);
+      }
+    }
+    achados.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+    // funde blocos adjacentes
+    let i1 = 0, j1 = 0, k1 = 0;
+    const blocos = [];
+    for (const [i2, j2, k2] of achados) {
+      if (i1 + k1 === i2 && j1 + k1 === j2) {
+        k1 += k2;
+      } else {
+        if (k1) blocos.push([i1, j1, k1]);
+        i1 = i2; j1 = j2; k1 = k2;
+      }
+    }
+    if (k1) blocos.push([i1, j1, k1]);
+    blocos.push([this.a.length, this.b.length, 0]);
+    this._blocos = blocos;
+    return blocos;
+  }
+
+  opcodes() {
+    let i = 0, j = 0;
+    const resultado = [];
+    for (const [ai, bj, tamanho] of this.blocosCasados()) {
+      let tag = "";
+      if (i < ai && j < bj) tag = "replace";
+      else if (i < ai) tag = "delete";
+      else if (j < bj) tag = "insert";
+      if (tag) resultado.push([tag, i, ai, j, bj]);
+      i = ai + tamanho;
+      j = bj + tamanho;
+      if (tamanho) resultado.push(["equal", ai, i, bj, j]);
+    }
+    return resultado;
+  }
+
+  ratio() {
+    const casados = this.blocosCasados().reduce((soma, b) => soma + b[2], 0);
+    const total = this.a.length + this.b.length;
+    return total ? (2 * casados) / total : 1;
+  }
+}
+
+function tokenizar(linha) {
+  return linha.match(/\s+|\S+/g) || [];
+}
+
+function ratioLinhas(a, b) {
+  return new SequenceMatcher([...a], [...b]).ratio();
+}
+
+/* Divide como o str.splitlines() do Python (sem o separador final). */
+function dividirLinhas(texto) {
+  if (texto === "") return [];
+  const linhas = texto.split(/\r\n|\r|\n/);
+  if (linhas[linhas.length - 1] === "") linhas.pop();
+  return linhas;
+}
+
+function segmentosInline(original, modificado) {
+  const matcher = new SequenceMatcher(tokenizar(original), tokenizar(modificado));
+  const mesclada = [], ladoOriginal = [], ladoModificado = [];
+  for (const [op, i1, i2, j1, j2] of matcher.opcodes()) {
+    const trechoA = matcher.a.slice(i1, i2).join("");
+    const trechoB = matcher.b.slice(j1, j2).join("");
+    if (op === "equal") {
+      mesclada.push({ tipo: "igual", texto: trechoA });
+      ladoOriginal.push({ tipo: "igual", texto: trechoA });
+      ladoModificado.push({ tipo: "igual", texto: trechoB });
+    } else if (op === "delete") {
+      mesclada.push({ tipo: "del", texto: trechoA });
+      ladoOriginal.push({ tipo: "del", texto: trechoA });
+    } else if (op === "insert") {
+      mesclada.push({ tipo: "add", texto: trechoB });
+      ladoModificado.push({ tipo: "add", texto: trechoB });
+    } else {
+      mesclada.push({ tipo: "del", texto: trechoA });
+      mesclada.push({ tipo: "add", texto: trechoB });
+      ladoOriginal.push({ tipo: "del", texto: trechoA });
+      ladoModificado.push({ tipo: "add", texto: trechoB });
+    }
+  }
+  return [mesclada, ladoOriginal, ladoModificado];
+}
+
+class Montador {
+  constructor() {
+    this.unificado = [];
+    this.ladoALado = [];
+    this.estatisticas = { adicionadas: 0, removidas: 0, alteradas: 0, iguais: 0 };
+  }
+
+  igual(texto, numO, numM) {
+    const seg = [{ tipo: "igual", texto }];
+    this.unificado.push({ tipo: "igual", num_original: numO, num_modificado: numM, segmentos: seg });
+    this.ladoALado.push({
+      original: { tipo: "igual", numero: numO, segmentos: seg },
+      modificado: { tipo: "igual", numero: numM, segmentos: seg },
+    });
+    this.estatisticas.iguais += 1;
+  }
+
+  remocao(texto, numO) {
+    const seg = [{ tipo: "del", texto }];
+    this.unificado.push({ tipo: "del", num_original: numO, num_modificado: null, segmentos: seg });
+    this.ladoALado.push({
+      original: { tipo: "del", numero: numO, segmentos: seg },
+      modificado: { tipo: "vazia", numero: null, segmentos: [] },
+    });
+    this.estatisticas.removidas += 1;
+  }
+
+  adicao(texto, numM) {
+    const seg = [{ tipo: "add", texto }];
+    this.unificado.push({ tipo: "add", num_original: null, num_modificado: numM, segmentos: seg });
+    this.ladoALado.push({
+      original: { tipo: "vazia", numero: null, segmentos: [] },
+      modificado: { tipo: "add", numero: numM, segmentos: seg },
+    });
+    this.estatisticas.adicionadas += 1;
+  }
+
+  alteracao(original, modificado, numO, numM) {
+    const [mesclada, ladoO, ladoM] = segmentosInline(original, modificado);
+    this.unificado.push({ tipo: "alterada", num_original: numO, num_modificado: numM, segmentos: mesclada });
+    this.ladoALado.push({
+      original: { tipo: "alterada", numero: numO, segmentos: ladoO },
+      modificado: { tipo: "alterada", numero: numM, segmentos: ladoM },
+    });
+    this.estatisticas.alteradas += 1;
+  }
+
+  trocaIntegral(original, modificado, numO, numM) {
+    const segDel = [{ tipo: "del", texto: original }];
+    const segAdd = [{ tipo: "add", texto: modificado }];
+    this.unificado.push({ tipo: "del", num_original: numO, num_modificado: null, segmentos: segDel });
+    this.unificado.push({ tipo: "add", num_original: null, num_modificado: numM, segmentos: segAdd });
+    this.ladoALado.push({
+      original: { tipo: "del", numero: numO, segmentos: segDel },
+      modificado: { tipo: "add", numero: numM, segmentos: segAdd },
+    });
+    this.estatisticas.removidas += 1;
+    this.estatisticas.adicionadas += 1;
+  }
+}
+
+function replacePosicional(montador, linhasO, linhasM, i1, i2, j1, j2) {
+  const pares = Math.max(i2 - i1, j2 - j1);
+  for (let k = 0; k < pares; k++) {
+    const temO = i1 + k < i2;
+    const temM = j1 + k < j2;
+    if (temO && temM) {
+      const linhaO = linhasO[i1 + k];
+      const linhaM = linhasM[j1 + k];
+      if (ratioLinhas(linhaO, linhaM) >= LIMIAR_SIMILARIDADE) {
+        montador.alteracao(linhaO, linhaM, i1 + k + 1, j1 + k + 1);
+      } else {
+        montador.trocaIntegral(linhaO, linhaM, i1 + k + 1, j1 + k + 1);
+      }
+    } else if (temO) {
+      montador.remocao(linhasO[i1 + k], i1 + k + 1);
+    } else {
+      montador.adicao(linhasM[j1 + k], j1 + k + 1);
+    }
+  }
+}
+
+function replacePorSimilaridade(montador, linhasO, linhasM, i1, i2, j1, j2) {
+  if (i1 >= i2 && j1 >= j2) return;
+  if (i1 >= i2) {
+    for (let j = j1; j < j2; j++) montador.adicao(linhasM[j], j + 1);
+    return;
+  }
+  if (j1 >= j2) {
+    for (let i = i1; i < i2; i++) montador.remocao(linhasO[i], i + 1);
+    return;
+  }
+  if ((i2 - i1) * (j2 - j1) > MAX_COMBINACOES) {
+    replacePosicional(montador, linhasO, linhasM, i1, i2, j1, j2);
+    return;
+  }
+
+  let melhorRatio = -1, melhorI = i1, melhorJ = j1;
+  for (let i = i1; i < i2; i++) {
+    for (let j = j1; j < j2; j++) {
+      const r = ratioLinhas(linhasO[i], linhasM[j]);
+      if (r > melhorRatio) {
+        melhorRatio = r;
+        melhorI = i;
+        melhorJ = j;
+      }
+    }
+  }
+
+  if (melhorRatio < LIMIAR_SIMILARIDADE) {
+    replacePosicional(montador, linhasO, linhasM, i1, i2, j1, j2);
+    return;
+  }
+
+  replacePorSimilaridade(montador, linhasO, linhasM, i1, melhorI, j1, melhorJ);
+  if (linhasO[melhorI] === linhasM[melhorJ]) {
+    montador.igual(linhasO[melhorI], melhorI + 1, melhorJ + 1);
+  } else {
+    montador.alteracao(linhasO[melhorI], linhasM[melhorJ], melhorI + 1, melhorJ + 1);
+  }
+  replacePorSimilaridade(montador, linhasO, linhasM, melhorI + 1, i2, melhorJ + 1, j2);
+}
+
+function compararTextos(textoOriginal, textoModificado) {
+  const linhasO = dividirLinhas(textoOriginal);
+  const linhasM = dividirLinhas(textoModificado);
+  const matcher = new SequenceMatcher(linhasO, linhasM);
+  const montador = new Montador();
+
+  for (const [op, i1, i2, j1, j2] of matcher.opcodes()) {
+    if (op === "equal") {
+      for (let k = 0; k < i2 - i1; k++) {
+        montador.igual(linhasO[i1 + k], i1 + k + 1, j1 + k + 1);
+      }
+    } else if (op === "delete") {
+      for (let i = i1; i < i2; i++) montador.remocao(linhasO[i], i + 1);
+    } else if (op === "insert") {
+      for (let j = j1; j < j2; j++) montador.adicao(linhasM[j], j + 1);
+    } else {
+      replacePorSimilaridade(montador, linhasO, linhasM, i1, i2, j1, j2);
+    }
+  }
+
+  const est = montador.estatisticas;
+  return {
+    unificado: montador.unificado,
+    lado_a_lado: montador.ladoALado,
+    estatisticas: est,
+    identicos: est.adicionadas + est.removidas + est.alteradas === 0,
+  };
+}
+/* ===== FIM-MOTOR ===== */
+
+/* ---------- interface ---------- */
+(function () {
+  "use strict";
+
+  const TAMANHO_MAXIMO = 5 * 1024 * 1024;
+
+  const telaInicial = document.getElementById("tela-inicial");
+  const telaResultado = document.getElementById("tela-resultado");
+  const erro = document.getElementById("erro");
+  const botao = document.getElementById("botao-comparar");
+  const campos = {
+    original: document.getElementById("campo-original"),
+    modificado: document.getElementById("campo-modificado"),
+  };
+
+  function mostrarErro(mensagem) {
+    erro.textContent = mensagem;
+    erro.classList.remove("oculto");
+  }
+
+  function limparErro() {
+    erro.classList.add("oculto");
+  }
+
+  function ligarZona(idZona, campo, idNome) {
+    const zona = document.getElementById(idZona);
+    const nome = document.getElementById(idNome);
+
+    function atualizar() {
+      const arquivo = campo.files[0];
+      nome.textContent = arquivo ? arquivo.name : "";
+      zona.classList.toggle("preenchida", Boolean(arquivo));
+      botao.disabled = !(campos.original.files.length && campos.modificado.files.length);
+    }
+
+    campo.addEventListener("change", atualizar);
+    zona.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      zona.classList.add("arrastando");
+    });
+    zona.addEventListener("dragleave", () => zona.classList.remove("arrastando"));
+    zona.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zona.classList.remove("arrastando");
+      if (e.dataTransfer.files.length > 0) {
+        campo.files = e.dataTransfer.files;
+        atualizar();
+      }
+    });
+    return atualizar;
+  }
+
+  const atualizarOriginal = ligarZona("zona-original", campos.original, "nome-original");
+  const atualizarModificado = ligarZona("zona-modificado", campos.modificado, "nome-modificado");
+
+  /* Decodifica como o app FastAPI: rejeita binário, tenta UTF-8, cai para Latin-1. */
+  function decodificar(buffer) {
+    const bytes = new Uint8Array(buffer);
+    if (bytes.includes(0)) return null;
+    try {
+      return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    } catch {
+      return new TextDecoder("windows-1252").decode(bytes);
+    }
+  }
+
+  function lerArquivo(arquivo) {
+    return arquivo.arrayBuffer().then((buffer) => {
+      if (buffer.byteLength > TAMANHO_MAXIMO) {
+        throw new Error(`O arquivo “${arquivo.name}” passa do limite de 5 MB.`);
+      }
+      const texto = decodificar(buffer);
+      if (texto === null) {
+        throw new Error(
+          `O arquivo “${arquivo.name}” não parece ser texto. ` +
+          "Envie arquivos de texto (txt, md, código, csv…)."
+        );
+      }
+      return texto;
+    });
+  }
+
+  function escapar(texto) {
+    return texto
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+  }
+
+  function renderSegmentos(segmentos) {
+    return segmentos
+      .map((s) =>
+        s.tipo === "igual"
+          ? escapar(s.texto)
+          : `<span class="seg-${s.tipo}">${escapar(s.texto)}</span>`
+      )
+      .join("");
+  }
+
+  function plural(quantidade, singular, pluralizado) {
+    return `${quantidade} ${quantidade === 1 ? singular : pluralizado}`;
+  }
+
+  function renderResultado(nomeOriginal, nomeModificado, comparacao) {
+    document.getElementById("rotulo-original").textContent = nomeOriginal;
+    document.getElementById("rotulo-modificado").textContent = nomeModificado;
+    document.getElementById("cabecalho-original").textContent = nomeOriginal;
+    document.getElementById("cabecalho-modificado").textContent = nomeModificado;
+
+    const est = comparacao.estatisticas;
+    document.getElementById("dist-add").textContent = plural(est.adicionadas, "adicionada", "adicionadas");
+    document.getElementById("dist-del").textContent = plural(est.removidas, "removida", "removidas");
+    document.getElementById("dist-alt").textContent = plural(est.alteradas, "alterada", "alteradas");
+    document.getElementById("aviso-identicos").classList.toggle("oculto", !comparacao.identicos);
+
+    document.getElementById("documento-marcado").innerHTML = comparacao.unificado
+      .map(
+        (linha) => `<div class="linha ${linha.tipo}">` +
+          `<span class="num">${linha.num_original ?? ""}</span>` +
+          `<span class="num">${linha.num_modificado ?? ""}</span>` +
+          `<span class="conteudo">${renderSegmentos(linha.segmentos)}</span>` +
+          "</div>"
+      )
+      .join("");
+
+    document.getElementById("corpo-duplo").innerHTML = comparacao.lado_a_lado
+      .map(
+        (par) => "<tr>" +
+          `<td class="num">${par.original.numero ?? ""}</td>` +
+          `<td class="conteudo ${par.original.tipo}">${renderSegmentos(par.original.segmentos)}</td>` +
+          `<td class="num meio">${par.modificado.numero ?? ""}</td>` +
+          `<td class="conteudo ${par.modificado.tipo}">${renderSegmentos(par.modificado.segmentos)}</td>` +
+          "</tr>"
+      )
+      .join("");
+
+    telaInicial.classList.add("oculto");
+    telaResultado.classList.remove("oculto");
+  }
+
+  botao.addEventListener("click", () => {
+    limparErro();
+    const arquivoO = campos.original.files[0];
+    const arquivoM = campos.modificado.files[0];
+    if (!arquivoO || !arquivoM) return;
+    Promise.all([lerArquivo(arquivoO), lerArquivo(arquivoM)])
+      .then(([textoO, textoM]) => {
+        const comparacao = compararTextos(textoO, textoM);
+        renderResultado(arquivoO.name, arquivoM.name, comparacao);
+      })
+      .catch((excecao) => mostrarErro(excecao.message));
+  });
+
+  document.getElementById("botao-nova").addEventListener("click", () => {
+    campos.original.value = "";
+    campos.modificado.value = "";
+    atualizarOriginal();
+    atualizarModificado();
+    limparErro();
+    telaResultado.classList.add("oculto");
+    telaInicial.classList.remove("oculto");
+  });
+
+  const abaMarcado = document.getElementById("aba-marcado");
+  const abaDuplo = document.getElementById("aba-duplo");
+  const visaoMarcado = document.getElementById("visao-marcado");
+  const visaoDuplo = document.getElementById("visao-duplo");
+
+  function ativar(aba, visao, outraAba, outraVisao) {
+    aba.classList.add("ativa");
+    outraAba.classList.remove("ativa");
+    visao.classList.add("visivel");
+    outraVisao.classList.remove("visivel");
+  }
+
+  abaMarcado.addEventListener("click", () => ativar(abaMarcado, visaoMarcado, abaDuplo, visaoDuplo));
+  abaDuplo.addEventListener("click", () => ativar(abaDuplo, visaoDuplo, abaMarcado, visaoMarcado));
+
+  /* Gancho para testes automatizados (não usado no fluxo normal). */
+  window.__comparadorTeste = { compararTextos, renderResultado };
+})();
+</script>
+</body>
+</html>

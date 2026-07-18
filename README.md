@@ -11,6 +11,10 @@ para o que saiu, verde sublinhado para o que entrou e destaque amarelo (com
 diff palavra a palavra) nas linhas alteradas. Inclui visão unificada
 ("Documento marcado") e visão lado a lado. Veja o [README do app](diff/README.md).
 
+Há também uma **versão estática exportada** em
+[`diff/comparador.html`](diff/comparador.html): o app inteiro num único
+arquivo HTML que roda 100% no navegador, sem servidor.
+
 ```bash
 cd diff
 pip install -r requirements.txt
