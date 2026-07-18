@@ -1,0 +1,14 @@
+{
+  "numeroOab": "",
+  "ufOab": "SP",
+  "siglaTribunal": "",
+  "email": {
+    "habilitado": true,
+    "para": ["gcforte@me.com"],
+    "de": "gcforte@me.com",
+    "smtp_host": "smtp.mail.me.com",
+    "smtp_porta": 587,
+    "smtp_usuario": "gcforte@me.com",
+    "enviar_quando_vazio": true
+  }
+}
