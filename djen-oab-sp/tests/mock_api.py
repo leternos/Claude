@@ -4,8 +4,11 @@ Emula GET /api/v1/comunicacao com paginação e o formato de resposta real.
 """
 
 import json
+import os
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+OAB_ESPERADA = os.environ.get("DJEN_MOCK_OAB", "123456")
 
 TEXTO = ("<p>Vistos. Intime-se a parte autora, por seu advogado, para manifestação "
          "no prazo de 15 (quinze) dias, nos termos do art. 350 do CPC.</p>")
@@ -31,7 +34,7 @@ def gerar_itens(n=130, data="2026-07-17"):
             "destinatarioadvogados": [{
                 "id": i, "comunicacao_id": i, "advogado_id": 1,
                 "advogado": {"id": 1, "nome": "ADVOGADO TESTE",
-                             "numero_oab": "123456", "uf_oab": "SP"},
+                             "numero_oab": OAB_ESPERADA, "uf_oab": "SP"},
             }],
         })
     return itens
@@ -46,7 +49,7 @@ class MockHandler(BaseHTTPRequestHandler):
         if url.path != "/api/v1/comunicacao":
             self.send_error(404)
             return
-        if q.get("numeroOab", [""])[0] != "123456":
+        if q.get("numeroOab", [""])[0] != OAB_ESPERADA:
             filtrados = []
         else:
             filtrados = self.itens
