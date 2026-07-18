@@ -1,0 +1,5 @@
+# Documentos do cliente e resultados ficam só na máquina local — nunca no GitHub
+corpus/
+banco/
+relatorios/
+__pycache__/
