@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="cartao">
+  <h2>Comparar dois arquivos</h2>
+  <p class="descricao">
+    Envie o arquivo original e o modificado. O resultado sai com marcação no
+    estilo do Word: <span class="seg-del">vermelho tachado</span> para o que
+    saiu, <span class="seg-add">verde sublinhado</span> para o que entrou e
+    destaque amarelo nas linhas alteradas.
+  </p>
+
+  {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+
+  <form method="post" action="/comparar" enctype="multipart/form-data" id="formulario">
+    <div class="zonas">
+      <label class="zona" id="zona-original">
+        <div class="rotulo">Arquivo original</div>
+        <div class="dica">Clique para escolher ou arraste o arquivo até aqui</div>
+        <div class="nome-arquivo" id="nome-original"></div>
+        <input type="file" name="original" id="campo-original" required>
+      </label>
+      <label class="zona" id="zona-modificado">
+        <div class="rotulo">Arquivo modificado</div>
+        <div class="dica">Clique para escolher ou arraste o arquivo até aqui</div>
+        <div class="nome-arquivo" id="nome-modificado"></div>
+        <input type="file" name="modificado" id="campo-modificado" required>
+      </label>
+    </div>
+    <div class="acoes">
+      <button type="submit" class="principal" id="botao-comparar" disabled>Comparar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const botao = document.getElementById("botao-comparar");
+
+  function ligarZona(idZona, idCampo, idNome) {
+    const zona = document.getElementById(idZona);
+    const campo = document.getElementById(idCampo);
+    const nome = document.getElementById(idNome);
+
+    function atualizar() {
+      const arquivo = campo.files[0];
+      nome.textContent = arquivo ? arquivo.name : "";
+      zona.classList.toggle("preenchida", Boolean(arquivo));
+      const outroPronto = [...document.querySelectorAll("input[type=file]")]
+        .every((c) => c.files.length > 0);
+      botao.disabled = !outroPronto;
+    }
+
+    campo.addEventListener("change", atualizar);
+    zona.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      zona.classList.add("arrastando");
+    });
+    zona.addEventListener("dragleave", () => zona.classList.remove("arrastando"));
+    zona.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zona.classList.remove("arrastando");
+      if (e.dataTransfer.files.length > 0) {
+        campo.files = e.dataTransfer.files;
+        atualizar();
+      }
+    });
+  }
+
+  ligarZona("zona-original", "campo-original", "nome-original");
+  ligarZona("zona-modificado", "campo-modificado", "nome-modificado");
+</script>
+{% endblock %}

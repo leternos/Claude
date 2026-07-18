@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block titulo %}Resultado — Comparador de Arquivos{% endblock %}
+
+{% macro renderizar_segmentos(segmentos) -%}
+  {%- for seg in segmentos -%}
+    {%- if seg.tipo == "igual" -%}{{ seg.texto }}{%- else -%}<span class="seg-{{ seg.tipo }}">{{ seg.texto }}</span>{%- endif -%}
+  {%- endfor -%}
+{%- endmacro %}
+
+{% block conteudo %}
+<div class="barra-resultado">
+  <div class="arquivos">
+    <strong>{{ nome_original }}</strong> → <strong>{{ nome_modificado }}</strong>
+    &nbsp;·&nbsp; <a class="voltar" href="/">Nova comparação</a>
+  </div>
+  <div class="distintivos">
+    <span class="distintivo add">{{ comparacao.estatisticas.adicionadas }} adicionada{{ "s" if comparacao.estatisticas.adicionadas != 1 }}</span>
+    <span class="distintivo del">{{ comparacao.estatisticas.removidas }} removida{{ "s" if comparacao.estatisticas.removidas != 1 }}</span>
+    <span class="distintivo alt">{{ comparacao.estatisticas.alteradas }} alterada{{ "s" if comparacao.estatisticas.alteradas != 1 }}</span>
+  </div>
+</div>
+
+{% if comparacao.identicos %}
+<div class="aviso-identicos">Os dois arquivos têm o mesmo conteúdo — nenhuma diferença encontrada.</div>
+{% endif %}
+
+<div class="legenda">
+  <span><span class="seg-del">texto removido</span></span>
+  <span><span class="seg-add">texto adicionado</span></span>
+  <span><span style="background: var(--ambar-fundo); padding: 0 0.3rem;">linha alterada</span></span>
+</div>
+
+<div class="abas">
+  <button type="button" id="aba-marcado" class="ativa">Documento marcado</button>
+  <button type="button" id="aba-duplo">Lado a lado</button>
+</div>
+
+<div class="folha">
+  <div class="visao visivel" id="visao-marcado">
+    <div class="documento">
+      {% for linha in comparacao.unificado %}
+      <div class="linha {{ linha.tipo }}">
+        <span class="num">{{ linha.num_original or "" }}</span>
+        <span class="num">{{ linha.num_modificado or "" }}</span>
+        <span class="conteudo">{{ renderizar_segmentos(linha.segmentos) }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="visao" id="visao-duplo">
+    <table class="duplo">
+      <colgroup>
+        <col class="gutter"><col><col class="gutter"><col>
+      </colgroup>
+      <thead>
+        <tr>
+          <th colspan="2">{{ nome_original }}</th>
+          <th colspan="2" class="meio">{{ nome_modificado }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for par in comparacao.lado_a_lado %}
+        <tr>
+          <td class="num">{{ par.original.numero or "" }}</td>
+          <td class="conteudo {{ par.original.tipo }}">{{ renderizar_segmentos(par.original.segmentos) }}</td>
+          <td class="num meio">{{ par.modificado.numero or "" }}</td>
+          <td class="conteudo {{ par.modificado.tipo }}">{{ renderizar_segmentos(par.modificado.segmentos) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const abaMarcado = document.getElementById("aba-marcado");
+  const abaDuplo = document.getElementById("aba-duplo");
+  const visaoMarcado = document.getElementById("visao-marcado");
+  const visaoDuplo = document.getElementById("visao-duplo");
+
+  function ativar(aba, visao, outraAba, outraVisao) {
+    aba.classList.add("ativa");
+    outraAba.classList.remove("ativa");
+    visao.classList.add("visivel");
+    outraVisao.classList.remove("visivel");
+  }
+
+  abaMarcado.addEventListener("click", () =>
+    ativar(abaMarcado, visaoMarcado, abaDuplo, visaoDuplo));
+  abaDuplo.addEventListener("click", () =>
+    ativar(abaDuplo, visaoDuplo, abaMarcado, visaoMarcado));
+</script>
+{% endblock %}

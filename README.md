@@ -1,6 +1,21 @@
 # Skills do Claude Code
 
-Repositório de skills personalizadas para o [Claude Code](https://code.claude.com/docs).
+Repositório de skills personalizadas para o [Claude Code](https://code.claude.com/docs)
+e pequenos aplicativos.
+
+## `/diff` — Comparador de Arquivos
+
+Aplicação [FastAPI](diff/) com interface HTML para comparar dois arquivos de
+texto, com marcação no estilo "Controlar Alterações" do Word: vermelho tachado
+para o que saiu, verde sublinhado para o que entrou e destaque amarelo (com
+diff palavra a palavra) nas linhas alteradas. Inclui visão unificada
+("Documento marcado") e visão lado a lado. Veja o [README do app](diff/README.md).
+
+```bash
+cd diff
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
 
 ## `/otimizar-prompt`
 
