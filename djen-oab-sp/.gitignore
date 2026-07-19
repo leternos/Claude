@@ -1,3 +1,4 @@
 exports/
 .smtp_senha
+.sendgrid_key
 __pycache__/

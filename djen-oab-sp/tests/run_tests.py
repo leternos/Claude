@@ -77,7 +77,22 @@ def main():
     finally:
         (RAIZ / "config.json").write_text(cfg_original, encoding="utf-8")
 
-    print("5. webapp app.py (subprocesso)")
+    print("5. notificacao.montar_payload_sendgrid (sem rede)")
+    import notificacao  # noqa: E402
+    cfg_sg = {"provedor": "sendgrid", "para": ["gcforte@me.com", "outro@x.com"],
+              "de": "gcforte@me.com", "de_nome": "DJEN"}
+    anexo = [notificacao._anexo(RAIZ / "config.json")]
+    pl = notificacao.montar_payload_sendgrid(
+        cfg_sg, "Assunto", "corpo txt", "<b>html</b>", anexo)
+    verificar("2 destinatários", len(pl["personalizations"][0]["to"]) == 2)
+    verificar("remetente correto", pl["from"]["email"] == "gcforte@me.com")
+    verificar("conteúdo txt+html", [c["type"] for c in pl["content"]]
+              == ["text/plain", "text/html"])
+    verificar("anexo base64 presente",
+              pl["attachments"][0]["filename"] == "config.json"
+              and len(pl["attachments"][0]["content"]) > 0)
+
+    print("6. webapp app.py (subprocesso)")
     porta_app = 8899
     app = subprocess.Popen([sys.executable, "app.py", str(porta_app)], cwd=RAIZ,
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,

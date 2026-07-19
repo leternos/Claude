@@ -4,8 +4,10 @@
   "siglaTribunal": "",
   "email": {
     "habilitado": true,
+    "provedor": "smtp",
     "para": ["gcforte@me.com"],
     "de": "gcforte@me.com",
+    "de_nome": "DJEN OAB 124536/SP",
     "smtp_host": "smtp.mail.me.com",
     "smtp_porta": 587,
     "smtp_usuario": "gcforte@me.com",

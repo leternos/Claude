@@ -22,6 +22,17 @@ ENDPOINT = "/api/v1/comunicacao"
 USER_AGENT = "djen-oab-sp/1.0 (monitor de publicacoes; uso pessoal)"
 FUSO_BRASILIA = ZoneInfo("America/Sao_Paulo")
 
+# A API do CNJ bloqueia IPs fora do Brasil (HTTP 403). Para rodar de outro país
+# (ex.: buscar inline no chat), aponte DJEN_PROXY para um proxy/VPS no Brasil:
+#   export DJEN_PROXY="http://usuario:senha@meu-proxy-br:8080"
+DJEN_PROXY = os.environ.get("DJEN_PROXY", "").strip()
+
+if DJEN_PROXY:
+    _OPENER = urllib.request.build_opener(
+        urllib.request.ProxyHandler({"http": DJEN_PROXY, "https": DJEN_PROXY}))
+else:
+    _OPENER = urllib.request.build_opener()
+
 ITENS_POR_PAGINA = 100
 MAX_PAGINAS = 50
 TENTATIVAS = 3
@@ -51,7 +62,7 @@ def _requisitar(url: str) -> dict:
                 "User-Agent": USER_AGENT,
                 "Accept": "application/json",
             })
-            with urllib.request.urlopen(req, timeout=60) as resp:
+            with _OPENER.open(req, timeout=60) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code == 403:

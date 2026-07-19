@@ -7,10 +7,23 @@ para `gcforte@me.com`.
 
 Fonte de dados: API pública oficial `https://comunicaapi.pje.jus.br/api/v1/comunicacao`.
 
-> **Importante — rode no Brasil:** o CDN do CNJ **bloqueia IPs de fora do Brasil**
-> (HTTP 403). Execute o app e o agendamento em uma máquina/rede com IP brasileiro
-> (seu computador, ou um servidor/VPS em região brasileira). Foi por isso que o
-> agendamento não pôde ficar no ambiente de nuvem do Claude (IP nos EUA).
+> **Importante — precisa de IP no Brasil:** o CDN do CNJ **bloqueia IPs de fora do
+> Brasil** (HTTP 403). Execute o app e o agendamento em uma máquina/rede com IP
+> brasileiro (seu computador, ou um servidor/VPS em região brasileira). Se precisar
+> rodar de fora do país (ex.: buscar inline no chat), use um **proxy no Brasil**
+> apontando `DJEN_PROXY` (veja abaixo).
+
+### Rodar de fora do Brasil via proxy (`DJEN_PROXY`)
+
+Para que a busca funcione a partir de um ambiente fora do país, aponte para um
+proxy/VPS brasileiro que você controle:
+
+```bash
+export DJEN_PROXY="http://usuario:senha@meu-proxy-br:8080"
+python3 relatorio.py        # a requisição ao CNJ sai pelo IP do proxy
+```
+
+Sem `DJEN_PROXY`, as requisições saem pelo IP local da máquina.
 
 Sem dependências externas: só Python 3.9+ (biblioteca padrão).
 
@@ -34,19 +47,32 @@ exportação diária usar.
    { "numeroOab": "123456", "ufOab": "SP", ... }
    ```
 
-2. Crie a senha do SMTP. O padrão do `config.json` é o iCloud (`smtp.mail.me.com`),
-   já que o destino é `gcforte@me.com` — gere uma **senha de app** em
-   <https://account.apple.com> → Segurança → Senhas de app. Depois:
+2. Escolha o provedor de e-mail em `config.json` → `email.provedor`:
+
+   **a) `"smtp"` (padrão)** — iCloud (`smtp.mail.me.com`), já que o destino é
+   `gcforte@me.com`. Gere uma **senha de app** em <https://account.apple.com> →
+   Segurança → Senhas de app. Depois:
 
    ```bash
-   # opção A: variável de ambiente
-   export DJEN_SMTP_SENHA='sua-senha-de-app'
-   # opção B: arquivo (útil para cron/launchd)
+   export DJEN_SMTP_SENHA='sua-senha-de-app'                    # ou:
    echo 'sua-senha-de-app' > djen-oab-sp/.smtp_senha && chmod 600 djen-oab-sp/.smtp_senha
    ```
 
-   Para usar Gmail ou outro provedor, ajuste `smtp_host`, `smtp_porta`,
-   `smtp_usuario` e `de` no bloco `email` do `config.json`.
+   Para Gmail/outro, ajuste `smtp_host`, `smtp_porta`, `smtp_usuario` e `de`.
+
+   **b) `"sendgrid"` (Twilio SendGrid)** — API HTTP, sem senha de app, 100 e-mails/dia
+   grátis. Passos: crie a conta, **verifique o remetente** (Settings → Sender
+   Authentication → *Single Sender* com `gcforte@me.com`), gere uma **API key**
+   (Settings → API Keys, permissão *Mail Send*) e defina `email.provedor` como
+   `"sendgrid"`. Depois:
+
+   ```bash
+   export SENDGRID_API_KEY='SG.sua-api-key'                     # ou:
+   echo 'SG.sua-api-key' > djen-oab-sp/.sendgrid_key && chmod 600 djen-oab-sp/.sendgrid_key
+   ```
+
+   > O e-mail vai com o **relatório HTML no corpo** (além dos anexos CSV e HTML),
+   > nos dois provedores.
 
 3. Teste manualmente:
 
@@ -90,9 +116,11 @@ endpoints do webapp — sem depender da rede.
 
 | Arquivo | Função |
 | --- | --- |
-| `app.py` | Webapp (servidor local, porta 8859) |
-| `djen.py` | Cliente da API do DJEN + geradores CSV/HTML/JSON/resumo |
+| `app.py` | Painel local (porta 8859), sem formulário, OAB fixa do config |
+| `relatorio.py` | Gera o relatório HTML do dia (sem argumentos) e abre no navegador |
+| `djen.py` | Cliente da API do DJEN (com suporte a `DJEN_PROXY`) + geradores |
 | `daily_export.py` | Rotina diária: busca do dia, exporta e envia e-mail |
-| `config.json` | OAB monitorada e configuração de e-mail |
+| `notificacao.py` | Envio de e-mail: backends SMTP e SendGrid (Twilio) |
+| `config.json` | OAB monitorada e configuração de e-mail/provedor |
 | `agendamento/` | Instalador de cron e modelo de launchd (5:59) |
 | `tests/` | API simulada + testes de ponta a ponta |
