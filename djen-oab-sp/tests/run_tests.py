@@ -91,7 +91,9 @@ def main():
             except OSError:
                 time.sleep(0.2)
         pagina = urllib.request.urlopen(f"{base}/", timeout=10).read().decode()
-        verificar("página inicial carrega", "DJEN" in pagina and "Exportar CSV" in pagina)
+        verificar("página inicial (sem formulário, OAB fixa) carrega",
+                  "Publicações da OAB" in pagina and 'data-fmt="csv"' in pagina
+                  and 'id="numeroOab"' not in pagina)
         consulta = ("numeroOab=123456&ufOab=SP&dataInicio=2026-07-17"
                     "&dataFim=2026-07-17&siglaTribunal=")
         busca = json.loads(urllib.request.urlopen(
