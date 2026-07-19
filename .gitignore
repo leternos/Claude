@@ -1,0 +1,13 @@
+# Artefato de empacotamento gerado por scripts/empacotar.py
+.claude/skills/ementario/ementario.zip
+
+# Entradas/saídas de trabalho da skill (processo em sigilo — art. 72, §2º, EAOAB)
+.claude/skills/ementario/entradas/
+.claude/skills/ementario/saidas/
+
+# Arquivos de trabalho / rascunho (ex.: fontes de artifacts)
+scratchpad/
+
+# Python
+__pycache__/
+*.pyc
