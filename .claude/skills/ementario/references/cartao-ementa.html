@@ -1,0 +1,453 @@
+<title>Ementa — TED OAB/SP</title>
+<style>
+  :root {
+    --bg: #f4f2ec;
+    --panel: #fffdf8;
+    --ink: #20242a;
+    --muted: #6a6f78;
+    --faint: #8b9098;
+    --rule: #ddd6c8;
+    --rule-strong: #c8bfab;
+    --accent: #6b2333;
+    --accent-soft: #8a3b4c;
+    --btn-ink: #fffdf8;
+    --shadow: 0 1px 2px rgba(31,35,40,.05), 0 14px 38px -22px rgba(31,35,40,.4);
+    --serif: "Bookerly Display", "Bookerly", "Iowan Old Style", Georgia, "Palatino Linotype", "Times New Roman", serif;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14151a; --panel: #1c1e24; --ink: #e9e6de; --muted: #a6a49b; --faint: #7e7c74;
+      --rule: #33353d; --rule-strong: #45474f; --accent: #e39aa8; --accent-soft: #c5788a;
+      --btn-ink: #171319; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 44px -22px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg:#f4f2ec; --panel:#fffdf8; --ink:#20242a; --muted:#6a6f78; --faint:#8b9098;
+    --rule:#ddd6c8; --rule-strong:#c8bfab; --accent:#6b2333; --accent-soft:#8a3b4c; --btn-ink:#fffdf8;
+    --shadow:0 1px 2px rgba(31,35,40,.05), 0 14px 38px -22px rgba(31,35,40,.4);
+  }
+  :root[data-theme="dark"] {
+    --bg:#14151a; --panel:#1c1e24; --ink:#e9e6de; --muted:#a6a49b; --faint:#7e7c74;
+    --rule:#33353d; --rule-strong:#45474f; --accent:#e39aa8; --accent-soft:#c5788a; --btn-ink:#171319;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 18px 44px -22px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--serif);
+    line-height: 1.6;
+    font-size: clamp(16px, 2.6vw, 18px);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: clamp(18px, 4vw, 34px) clamp(14px, 4vw, 30px);
+  }
+
+  /* Toolbar */
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .bar .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-right: auto;
+  }
+  button {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 15px;
+    border-radius: 9px;
+    border: 1px solid var(--rule-strong);
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background .15s, border-color .15s, transform .05s;
+  }
+  button:hover { border-color: var(--accent-soft); }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.primary { background: var(--accent); color: var(--btn-ink); border-color: var(--accent); }
+  button.primary:hover { background: var(--accent-soft); border-color: var(--accent-soft); }
+  button svg { width: 15px; height: 15px; flex: none; }
+
+  /* The text box */
+  .caixa {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: clamp(22px, 4vw, 40px);
+  }
+
+  /* Cabeçalho — linha "EMENTA: ..." */
+  .cabecalho {
+    text-align: justify;
+    hyphens: auto;
+    margin: 0 0 22px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--rule);
+    font-size: clamp(15px, 2.5vw, 17px);
+    line-height: 1.55;
+    text-transform: uppercase;
+    letter-spacing: .005em;
+  }
+  .cabecalho .rot { font-weight: 700; color: var(--accent); }
+
+  /* Blocos */
+  .bloco { margin-top: 22px; }
+  .bloco:first-of-type { margin-top: 0; }
+  .bloco-titulo {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 12px;
+  }
+  .item {
+    display: flex;
+    gap: 12px;
+    text-align: justify;
+    margin: 0 0 13px;
+    font-size: clamp(16px, 2.6vw, 17.5px);
+    hyphens: auto;
+  }
+  .item:last-child { margin-bottom: 0; }
+  .item .n {
+    flex: none;
+    min-width: 1.4em;
+    text-align: right;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+  .item b { color: var(--accent); }
+
+  .note {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--faint);
+    text-align: center;
+    margin-top: 16px;
+  }
+  .toast {
+    font-family: var(--sans);
+    font-size: 12.5px;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+
+  @media print {
+    :root { --bg: #fff; --panel: #fff; }
+    .bar { display: none; }
+    .caixa { box-shadow: none; border-color: #bbb; }
+    .wrap { padding: 0; max-width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    button, .toast { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+  <div class="bar">
+    <span class="eyebrow">Ementa · TED OAB/SP</span>
+    <span class="toast" id="toast" role="status" aria-live="polite"></span>
+    <button id="btnCopy" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+      Copiar
+    </button>
+    <button id="btnDocx" type="button" class="primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 12v6"/><path d="m9 15 3 3 3-3"/></svg>
+      Exportar DOCX
+    </button>
+  </div>
+
+  <article class="caixa" id="doc"></article>
+
+  <p class="note" id="note">Modelo ilustrativo — o conteúdo real é gerado pela skill <em>ementa</em> a partir do voto.</p>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+ * ▼▼▼  DADOS DA EMENTA — ÚNICO BLOCO QUE A SKILL PREENCHE  ▼▼▼
+ *
+ * Estrutura fiel ao Manual do TED/SP (quatro blocos; a numeração
+ * cardinal CONTÍNUA do item 1 até o dispositivo é gerada
+ * automaticamente pelo template — não numere os itens).
+ *
+ *   cabecalho : string em CAIXA ALTA, sem o rótulo "EMENTA:", na
+ *               ordem do Manual: classe processual. [JULGAMENTO
+ *               SEGUNDO PERSPECTIVA DE GÊNERO, se incidir].
+ *               [preliminar com resultado, se houver]. verbetes.
+ *               conclusão. penalidade.
+ *   blocos[]  : { titulo, itens[] } — três blocos, nesta ordem:
+ *               Caso em exame e questão discutida / Razões de
+ *               decidir / Dispositivo.
+ *   itens[]   : { runs: [ {t:"texto", b:true?} ] }
+ *               b:true marca trecho em negrito (resultado, pena).
+ * ══════════════════════════════════════════════════════════════════ */
+const EMENTA = {
+  cabecalho: "REPRESENTAÇÃO. PUBLICIDADE PROFISSIONAL IRREGULAR. CAPTAÇÃO INDEVIDA DE CLIENTELA. VIOLAÇÃO AO ART. 34, III E IV, DO EAOAB E AO CÓDIGO DE ÉTICA E DISCIPLINA. PROCEDÊNCIA. CENSURA.",
+  blocos: [
+    {
+      titulo: "Caso em exame e questão discutida",
+      itens: [
+        { runs: [{ t: "Representação instaurada para apurar a divulgação de serviços advocatícios com oferta de resultados e captação de clientela por intermédio de terceiros." }] },
+        { runs: [{ t: "A questão discutida consiste em saber se a conduta configura infração aos limites da publicidade profissional previstos no Código de Ética e Disciplina e no art. 34 do Estatuto da Advocacia." }] }
+      ]
+    },
+    {
+      titulo: "Razões de decidir",
+      itens: [
+        { runs: [{ t: "No mérito, a divulgação que oferece resultados e emprega expressões persuasivas extrapola o caráter meramente informativo autorizado, comprometendo a sobriedade e a discrição exigidas da publicidade profissional." }] },
+        { runs: [{ t: "A angariação de causas ou clientes por intermédio de terceiros caracteriza captação indevida, incompatível com a natureza da advocacia como função essencial à Justiça." }] },
+        { runs: [{ t: "Quanto à penalidade, ausentes circunstâncias agravantes e presente a primariedade, aplica-se a sanção de " }, { t: "censura", b: true }, { t: ", nos termos do art. 36, I, do Estatuto." }] }
+      ]
+    },
+    {
+      titulo: "Dispositivo",
+      itens: [
+        { runs: [{ t: "Representação julgada " }, { t: "procedente", b: true }, { t: ", com aplicação da pena de censura." }] }
+      ]
+    }
+  ]
+};
+/* ▲▲▲  FIM DOS DADOS DA EMENTA  ▲▲▲ */
+
+/* ---------- helpers ---------- */
+const runsText = runs => runs.map(r => r.t).join("");
+const runsHTML = runs => runs.map(r => {
+  const esc = r.t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return r.b ? "<b>" + esc + "</b>" : esc;
+}).join("");
+
+/* Normalização única para os três caminhos (tela, Copiar, DOCX):
+ * caixa alta REAL no cabeçalho e nos rótulos (não só via CSS) e
+ * numeração cardinal contínua gerada por contador — o template
+ * garante a conformidade com o Manual, não o preenchimento. */
+function ementaNormalizada() {
+  let k = 0;
+  return {
+    cabecalho: EMENTA.cabecalho.toUpperCase(),
+    blocos: EMENTA.blocos.map(bl => ({
+      titulo: bl.titulo.toUpperCase(),
+      itens: bl.itens.map(it => ({ n: ++k, runs: it.runs }))
+    }))
+  };
+}
+
+/* ---------- render na tela ---------- */
+function renderHTML() {
+  const E = ementaNormalizada();
+  let h = '<p class="cabecalho"><span class="rot">EMENTA:</span> ' +
+          E.cabecalho.replace(/&/g,"&amp;").replace(/</g,"&lt;") + '</p>';
+  E.blocos.forEach(bl => {
+    h += '<section class="bloco"><h2 class="bloco-titulo">' +
+         bl.titulo.replace(/</g,"&lt;") + '</h2>';
+    bl.itens.forEach(it => {
+      h += '<p class="item"><span class="n">' + it.n + '.</span><span>' +
+           runsHTML(it.runs) + '</span></p>';
+    });
+    h += '</section>';
+  });
+  document.getElementById("doc").innerHTML = h;
+}
+
+/* ---------- texto puro (botão Copiar) ---------- */
+function renderText() {
+  const E = ementaNormalizada();
+  const L = [];
+  L.push("EMENTA: " + E.cabecalho);
+  E.blocos.forEach(bl => {
+    L.push("");
+    L.push(bl.titulo);
+    bl.itens.forEach(it => L.push(it.n + ". " + runsText(it.runs)));
+  });
+  return L.join("\n");
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* ---------- copiar ---------- */
+document.getElementById("btnCopy").addEventListener("click", async () => {
+  const text = renderText();
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("Texto copiado ✓");
+  } catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast("Texto copiado ✓"); }
+    catch (_) { toast("Não foi possível copiar"); }
+    document.body.removeChild(ta);
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+ * DOCX — OOXML válido montado no navegador (ZIP store + CRC32)
+ * ══════════════════════════════════════════════════════════════════ */
+function strToU8(s) { return new TextEncoder().encode(s); }
+function xmlEsc(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(b) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < b.length; i++) c = CRC_TABLE[(c ^ b[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function dosDateTime() {
+  // data/hora DOS reais do momento da exportação (local: hora@10 data@12; central: hora@12 data@14)
+  const d = new Date();
+  return {
+    time: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+    date: (((d.getFullYear() - 1980) & 0x7f) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()
+  };
+}
+function zip(files) {
+  const parts = [], central = []; let offset = 0;
+  const { time, date } = dosDateTime();
+  for (const f of files) {
+    const nameB = strToU8(f.name), data = f.data, crc = crc32(data);
+    const lh = new Uint8Array(30 + nameB.length), dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true); dv.setUint16(4, 20, true);
+    dv.setUint16(10, time, true); dv.setUint16(12, date, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, data.length, true); dv.setUint32(22, data.length, true);
+    dv.setUint16(26, nameB.length, true); lh.set(nameB, 30);
+    parts.push(lh, data);
+    const cd = new Uint8Array(46 + nameB.length), cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(12, time, true); cv.setUint16(14, date, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true); cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nameB.length, true); cv.setUint32(42, offset, true); cd.set(nameB, 46);
+    central.push(cd); offset += lh.length + data.length;
+  }
+  let cdSize = 0; central.forEach(c => cdSize += c.length);
+  const end = new Uint8Array(22), ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true); ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, end],
+    { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+}
+function para(runs, o) {
+  o = o || {};
+  const jc = o.align || "both", after = o.after != null ? o.after : 160;
+  let r = "";
+  runs.forEach(run => {
+    let rpr = "";
+    if (run.b || o.bold) rpr += "<w:b/>";
+    if (o.caps) rpr += "<w:caps/>";
+    if (o.color) rpr += '<w:color w:val="' + o.color + '"/>';
+    if (o.spc) rpr += '<w:spacing w:val="' + o.spc + '"/>';
+    r += "<w:r>" + (rpr ? "<w:rPr>" + rpr + "</w:rPr>" : "") +
+         '<w:t xml:space="preserve">' + xmlEsc(run.t) + "</w:t></w:r>";
+  });
+  return '<w:p><w:pPr><w:jc w:val="' + jc + '"/>' +
+         '<w:spacing w:after="' + after + '" w:line="276" w:lineRule="auto"/></w:pPr>' + r + "</w:p>";
+}
+function buildDocumentXml() {
+  const E = ementaNormalizada();
+  let body = "";
+  // Cabeçalho: rótulo "EMENTA:" em negrito + texto em caixa alta real
+  body += para([{ t: "EMENTA: ", b: true }, { t: E.cabecalho }], { after: 240 });
+  E.blocos.forEach(bl => {
+    body += para([{ t: bl.titulo }], { bold: true, spc: 20, after: 60, align: "left" });
+    bl.itens.forEach(it => {
+      body += para([{ t: it.n + ". " }].concat(it.runs), { after: 140 });
+    });
+  });
+  const sect = '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>' +
+    '<w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417" ' +
+    'w:header="708" w:footer="708" w:gutter="0"/></w:sectPr>';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:body>' + body + sect + '</w:body></w:document>';
+}
+function buildDocx() {
+  // paridade com scripts/gerar_docx.py: Times New Roman 12, pt-BR, justificado
+  const ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+    '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+    '</Types>';
+  const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+    '</Relationships>';
+  const docRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+    '</Relationships>';
+  const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:docDefaults><w:rPrDefault><w:rPr>' +
+    '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>' +
+    '<w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="pt-BR"/>' +
+    '</w:rPr></w:rPrDefault></w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/>' +
+    '<w:pPr><w:jc w:val="both"/><w:spacing w:after="180" w:line="276" w:lineRule="auto"/></w:pPr>' +
+    '</w:style></w:styles>';
+  return zip([
+    { name: "[Content_Types].xml", data: strToU8(ct) },
+    { name: "_rels/.rels", data: strToU8(rels) },
+    { name: "word/_rels/document.xml.rels", data: strToU8(docRels) },
+    { name: "word/styles.xml", data: strToU8(styles) },
+    { name: "word/document.xml", data: strToU8(buildDocumentXml()) }
+  ]);
+}
+document.getElementById("btnDocx").addEventListener("click", () => {
+  try {
+    const url = URL.createObjectURL(buildDocx());
+    const a = document.createElement("a");
+    a.href = url; a.download = "ementa.docx";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    toast("DOCX exportado ✓");
+  } catch (e) { toast("Falha ao gerar DOCX"); }
+});
+
+/* init */
+renderHTML();
+</script>
