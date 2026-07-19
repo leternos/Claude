@@ -12,6 +12,7 @@ import base64
 import json
 import os
 import smtplib
+import urllib.parse
 import urllib.request
 from email.message import EmailMessage
 from pathlib import Path
@@ -115,3 +116,36 @@ def _enviar_sendgrid(cfg, assunto, corpo_txt, corpo_html, anexos):
     with urllib.request.urlopen(req, timeout=60) as resp:
         if resp.status not in (200, 202):
             raise SystemExit(f"SendGrid respondeu HTTP {resp.status}: {resp.read()[:300]}")
+
+
+# ------------------------------------------------------ WhatsApp (Twilio) -----
+TWILIO_URL = "https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
+
+
+def montar_form_twilio(de: str, para: str, texto: str) -> dict:
+    """Campos do formulário da API de mensagens do Twilio (função pura, testável)."""
+    return {"From": de, "To": para, "Body": texto}
+
+
+def enviar_whatsapp(cfg_wpp: dict, texto: str) -> int:
+    """Envia uma mensagem de WhatsApp por número em cfg_wpp['para']. Retorna quantos."""
+    sid = _segredo(("TWILIO_ACCOUNT_SID", "DJEN_TWILIO_SID"), ".twilio_sid")
+    token = _segredo(("TWILIO_AUTH_TOKEN", "DJEN_TWILIO_TOKEN"), ".twilio_token")
+    if not sid or not token:
+        raise SystemExit("Defina TWILIO_ACCOUNT_SID e TWILIO_AUTH_TOKEN (ou os arquivos "
+                         ".twilio_sid / .twilio_token) para enviar WhatsApp.")
+    url = TWILIO_URL.format(sid=sid)
+    auth = base64.b64encode(f"{sid}:{token}".encode("utf-8")).decode("ascii")
+    enviados = 0
+    for para in cfg_wpp["para"]:
+        dados = urllib.parse.urlencode(
+            montar_form_twilio(cfg_wpp["de"], para, texto)).encode("utf-8")
+        req = urllib.request.Request(
+            url, data=dados, method="POST",
+            headers={"Authorization": f"Basic {auth}",
+                     "Content-Type": "application/x-www-form-urlencoded"})
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            if resp.status not in (200, 201):
+                raise SystemExit(f"Twilio respondeu HTTP {resp.status}: {resp.read()[:300]}")
+        enviados += 1
+    return enviados

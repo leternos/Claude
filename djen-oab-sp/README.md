@@ -74,6 +74,23 @@ exportação diária usar.
    > O e-mail vai com o **relatório HTML no corpo** (além dos anexos CSV e HTML),
    > nos dois provedores.
 
+3. *(Opcional)* **Alerta por WhatsApp (Twilio).** Além do e-mail, dá para receber
+   uma mensagem curta no WhatsApp ("N publicações hoje"). Configure o bloco
+   `whatsapp` do `config.json` (`"habilitado": true`, seu número em `"para"` no
+   formato `"whatsapp:+55DDDNÚMERO"`), e informe as credenciais do Twilio:
+
+   ```bash
+   export TWILIO_ACCOUNT_SID='ACxxxxxxxx'
+   export TWILIO_AUTH_TOKEN='seu-token'          # ou arquivos .twilio_sid / .twilio_token
+   ```
+
+   Para testar rápido, use o **Sandbox de WhatsApp** do Twilio (Console → Messaging →
+   Try it out → WhatsApp): mantenha `"de": "whatsapp:+14155238886"` e envie a
+   frase de adesão (`join <palavra>`) do seu celular para o número do sandbox.
+   Para produção (mensagem enviada 5:59, fora da janela de 24 h), é preciso um
+   **remetente WhatsApp aprovado** e um **template** aprovado no Twilio — o e-mail
+   continua sendo o canal principal; o WhatsApp é só o aviso.
+
 3. Teste manualmente:
 
    ```bash
@@ -120,7 +137,7 @@ endpoints do webapp — sem depender da rede.
 | `relatorio.py` | Gera o relatório HTML do dia (sem argumentos) e abre no navegador |
 | `djen.py` | Cliente da API do DJEN (com suporte a `DJEN_PROXY`) + geradores |
 | `daily_export.py` | Rotina diária: busca do dia, exporta e envia e-mail |
-| `notificacao.py` | Envio de e-mail: backends SMTP e SendGrid (Twilio) |
+| `notificacao.py` | Notificações: e-mail (SMTP/SendGrid) e WhatsApp (Twilio) |
 | `config.json` | OAB monitorada e configuração de e-mail/provedor |
 | `agendamento/` | Instalador de cron e modelo de launchd (5:59) |
 | `tests/` | API simulada + testes de ponta a ponta |

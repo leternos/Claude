@@ -91,6 +91,11 @@ def main():
     verificar("anexo base64 presente",
               pl["attachments"][0]["filename"] == "config.json"
               and len(pl["attachments"][0]["content"]) > 0)
+    forma = notificacao.montar_form_twilio(
+        "whatsapp:+14155238886", "whatsapp:+5511999999999", "3 publicações hoje")
+    verificar("form Twilio (From/To/Body)",
+              forma["From"].startswith("whatsapp:") and forma["To"].startswith("whatsapp:")
+              and "publicações" in forma["Body"])
 
     print("6. webapp app.py (subprocesso)")
     porta_app = 8899

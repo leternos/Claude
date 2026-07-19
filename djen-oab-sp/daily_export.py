@@ -71,18 +71,34 @@ def main():
     for p in (arq_csv, arq_html, arq_json):
         print(f"  - {p.name}")
 
-    cfg_email = cfg.get("email", {})
-    if args.sem_email or not cfg_email.get("habilitado", False):
-        return
-    if not itens and not cfg_email.get("enviar_quando_vazio", True):
-        print("Nenhuma publicação e 'enviar_quando_vazio' desativado — e-mail não enviado.")
+    if args.sem_email:
         return
 
-    assunto = (f"DJEN OAB {numero_oab}/{uf_oab} — {len(itens)} publicação(ões) "
-               f"em {data}")
-    notificacao.enviar(cfg_email, assunto, resumo, corpo_html, [arq_csv, arq_html])
-    print(f"E-mail enviado ({cfg_email.get('provedor', 'smtp')}) para "
-          f"{', '.join(cfg_email['para'])}.")
+    # E-mail (provedor: smtp ou sendgrid)
+    cfg_email = cfg.get("email", {})
+    if cfg_email.get("habilitado", False):
+        if itens or cfg_email.get("enviar_quando_vazio", True):
+            assunto = (f"DJEN OAB {numero_oab}/{uf_oab} — {len(itens)} "
+                       f"publicação(ões) em {data}")
+            notificacao.enviar(cfg_email, assunto, resumo, corpo_html,
+                               [arq_csv, arq_html])
+            print(f"E-mail enviado ({cfg_email.get('provedor', 'smtp')}) para "
+                  f"{', '.join(cfg_email['para'])}.")
+        else:
+            print("Nenhuma publicação e 'enviar_quando_vazio' desativado — "
+                  "e-mail não enviado.")
+
+    # Alerta curto por WhatsApp (Twilio), opcional
+    cfg_wpp = cfg.get("whatsapp", {})
+    if cfg_wpp.get("habilitado", False) and cfg_wpp.get("para"):
+        if itens or cfg_wpp.get("enviar_quando_vazio", False):
+            texto = (f"DJEN OAB {numero_oab}/{uf_oab}: {len(itens)} publicação(ões) "
+                     f"em {data}. Detalhes completos no e-mail.")
+            try:
+                n = notificacao.enviar_whatsapp(cfg_wpp, texto)
+                print(f"WhatsApp enviado para {n} número(s).")
+            except Exception as e:  # não bloqueia se o e-mail já saiu # noqa: BLE001
+                print(f"WhatsApp não enviado: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":

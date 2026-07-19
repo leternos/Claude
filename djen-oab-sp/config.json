@@ -4,7 +4,7 @@
   "siglaTribunal": "",
   "email": {
     "habilitado": true,
-    "provedor": "smtp",
+    "provedor": "sendgrid",
     "para": ["gcforte@me.com"],
     "de": "gcforte@me.com",
     "de_nome": "DJEN OAB 124536/SP",
@@ -12,5 +12,11 @@
     "smtp_porta": 587,
     "smtp_usuario": "gcforte@me.com",
     "enviar_quando_vazio": true
+  },
+  "whatsapp": {
+    "habilitado": false,
+    "de": "whatsapp:+14155238886",
+    "para": [],
+    "enviar_quando_vazio": false
   }
 }
