@@ -40,8 +40,14 @@ def main() -> None:
         if z.testzip() is not None:
             raise SystemExit("zip corrompido")
         nomes = z.namelist()
-    if "ementario/SKILL.md" not in nomes:
-        raise SystemExit("pacote sem SKILL.md")
+    obrigatorios = (
+        "ementario/SKILL.md",
+        "ementario/references/cartao-ementa.html",   # a entrega depende dele
+        "ementario/references/manual-ementa-ted.md",
+    )
+    faltando = [n for n in obrigatorios if n not in nomes]
+    if faltando:
+        raise SystemExit(f"pacote incompleto — faltam: {', '.join(faltando)}")
 
     print(f"{destino} — {destino.stat().st_size} bytes")
     for nome in nomes:

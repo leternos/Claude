@@ -27,8 +27,9 @@ lastro de arquivo; a versão vigente é a inline.
 - Não apontar contradições, erros, lacunas ou sugestões de melhoria do voto.
 - Não resumir o voto, não explicar a ementa, não comentar o que foi feito.
 - Não acrescentar fundamento, precedente, norma ou verbete que o voto não traga.
-- Não perguntar nada antes de gerar. Havendo dúvida sobre um elemento, escreva
-  `[VERIFICAR]` no lugar e siga.
+- Não perguntar nada antes de gerar (única exceção: extração vazia de PDF
+  digitalizado — peça o .docx e pare). Havendo dúvida sobre um elemento,
+  escreva `[VERIFICAR]` no lugar e siga.
 
 ---
 
@@ -136,15 +137,14 @@ DISPOSITIVO
   QUANTO AO TERCEIRO."); no dispositivo, **individualizar** cada um.
 - **Fidelidade absoluta:** a ementa só reflete o que o voto decidiu; não antecipa
   nem extrapola.
-- **Sem nomes das partes.**
 
 ---
 
 ## Procedimento
 
 1. **Leia o texto do voto.** Com shell: `python3 scripts/extrair_voto.py
-   <arquivo>` (.docx, .pdf, .txt). Sem shell, leia o anexo direto. Vindo vazio, é
-   PDF digitalizado — peça o .docx e pare.
+   <arquivo>` (.docx, .pdf, .txt, .md). Sem shell, leia o anexo direto. Vindo
+   vazio, é PDF digitalizado — peça o .docx e pare.
 
 2. **Extraia do voto**, sem inferir: classe processual; preliminares e
    prejudiciais com resultado; condutas e normas violadas (incisos do art. 34 do
@@ -210,4 +210,7 @@ aperta **Exportar DOCX**. Isso mantém a saída rápida e sem ruído.
 
 **Fallback sem Artifact:** se o ambiente não dispuser da ferramenta Artifact,
 entregue o **texto da ementa** (quatro blocos, numeração contínua) direto no
-chat e, havendo shell, o `.docx` via `python3 scripts/gerar_docx.py <ementa.md>`.
+chat e, havendo shell, também o `.docx` — sem o botão Exportar do cartão, o
+arquivo volta a ser entregue junto. Gere-o gravando a ementa num `.md` com os
+**rótulos entre `**`** (é o que vira negrito) e cada item numerado em linha
+própria, e rodando `python3 scripts/gerar_docx.py <ementa.md>`.

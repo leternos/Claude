@@ -71,7 +71,7 @@ def recortar_ementa(md: str) -> list[str]:
         raise SystemExit("não encontrei o cabeçalho 'EMENTA:' no arquivo")
     fim = len(linhas)
     for i in range(inicio, len(linhas)):
-        if linhas[i].startswith("## "):        # notas de trabalho — não entram
+        if re.match(r"\s*#{1,6}\s", linhas[i]):  # notas de trabalho — não entram
             fim = i
             break
     corpo = linhas[inicio:fim]
@@ -103,6 +103,11 @@ def recortar_ementa(md: str) -> list[str]:
         atual.append(linha.strip())
     if atual:
         paragrafos.append(" ".join(atual))
+
+    # negrito desequilibrado viraria '**' literal no documento final
+    for p in paragrafos:
+        if p.count("**") % 2:
+            raise SystemExit(f"negrito '**' desequilibrado no parágrafo: {p[:70]}…")
     return paragrafos
 
 

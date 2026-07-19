@@ -17,23 +17,66 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+MC = "{http://schemas.openxmlformats.org/markup-compatibility/2006}"
+
+
+def _coletar(no, pedacos, raiz_p=True):
+    """Junta o texto de um parágrafo na ordem do documento, pulando
+    mc:Fallback (duplicata das caixas de texto em mc:AlternateContent);
+    parágrafos aninhados (caixas de texto) viram quebras de linha."""
+    if no.tag == f"{MC}Fallback":
+        return
+    if no.tag == f"{W}p" and not raiz_p:
+        pedacos.append("\n")
+    if no.tag == f"{W}t":
+        pedacos.append(no.text or "")
+    elif no.tag == f"{W}tab":
+        pedacos.append("\t")
+    elif no.tag in (f"{W}br", f"{W}cr"):
+        pedacos.append("\n")
+    for filho in no:
+        _coletar(filho, pedacos, raiz_p=False)
+
+
+def _paragrafos(raiz) -> list[str]:
+    """Um parágrafo por w:p de nível superior — sem contar de novo os
+    w:p aninhados em caixas de texto, já absorvidos pelo parágrafo-âncora."""
+    saida = []
+
+    def caminhar(no):
+        if no.tag == f"{MC}Fallback":
+            return
+        if no.tag == f"{W}p":
+            pedacos: list[str] = []
+            _coletar(no, pedacos)
+            saida.append("".join(pedacos).strip())
+            return
+        for filho in no:
+            caminhar(filho)
+
+    caminhar(raiz)
+    return saida
 
 
 def do_docx(caminho: Path) -> str:
     with zipfile.ZipFile(caminho) as z:
-        xml = z.read("word/document.xml")
-    raiz = ElementTree.fromstring(xml)
-    paragrafos = []
-    for p in raiz.iter(f"{W}p"):
-        pedacos = []
-        for no in p.iter():
-            if no.tag == f"{W}t":
-                pedacos.append(no.text or "")
-            elif no.tag in (f"{W}tab",):
-                pedacos.append("\t")
-            elif no.tag in (f"{W}br", f"{W}cr"):
-                pedacos.append("\n")
-        paragrafos.append("".join(pedacos).strip())
+        raiz = ElementTree.fromstring(z.read("word/document.xml"))
+        paragrafos = _paragrafos(raiz)
+        # notas de rodapé/fim carregam citações substantivas do voto
+        for parte, rotulo in (("word/footnotes.xml", "NOTAS DE RODAPÉ"),
+                              ("word/endnotes.xml", "NOTAS DE FIM")):
+            if parte not in z.namelist():
+                continue
+            raiz_notas = ElementTree.fromstring(z.read(parte))
+            notas = []
+            for nota in raiz_notas:
+                if nota.get(f"{W}type") in ("separator", "continuationSeparator"):
+                    continue
+                notas += _paragrafos(nota)
+            notas = [n for n in notas if n]
+            if notas:
+                paragrafos.append(f"[{rotulo}]")
+                paragrafos += notas
     return "\n\n".join(p for p in paragrafos if p)
 
 

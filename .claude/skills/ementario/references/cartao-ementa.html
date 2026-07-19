@@ -187,7 +187,7 @@
 
   <article class="caixa" id="doc"></article>
 
-  <p class="note" id="note">Modelo ilustrativo — o conteúdo real é gerado pela skill <em>ementa</em> a partir do voto.</p>
+  <p class="note" id="note">Modelo ilustrativo — o conteúdo real é gerado pela skill <em>ementario</em> a partir do voto.</p>
 </div>
 
 <script>
@@ -238,11 +238,11 @@ const EMENTA = {
 /* ▲▲▲  FIM DOS DADOS DA EMENTA  ▲▲▲ */
 
 /* ---------- helpers ---------- */
-const runsText = runs => runs.map(r => r.t).join("");
-const runsHTML = runs => runs.map(r => {
-  const esc = r.t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  return r.b ? "<b>" + esc + "</b>" : esc;
-}).join("");
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                                .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const runsText = runs => (runs || []).map(r => String(r.t ?? "")).join("");
+const runsHTML = runs => (runs || [])
+  .map(r => r.b ? "<b>" + esc(r.t) + "</b>" : esc(r.t)).join("");
 
 /* Normalização única para os três caminhos (tela, Copiar, DOCX):
  * caixa alta REAL no cabeçalho e nos rótulos (não só via CSS) e
@@ -251,10 +251,10 @@ const runsHTML = runs => runs.map(r => {
 function ementaNormalizada() {
   let k = 0;
   return {
-    cabecalho: EMENTA.cabecalho.toUpperCase(),
-    blocos: EMENTA.blocos.map(bl => ({
-      titulo: bl.titulo.toUpperCase(),
-      itens: bl.itens.map(it => ({ n: ++k, runs: it.runs }))
+    cabecalho: String(EMENTA.cabecalho ?? "").toUpperCase(),
+    blocos: (EMENTA.blocos || []).map(bl => ({
+      titulo: String(bl.titulo ?? "").toUpperCase(),
+      itens: (bl.itens || []).map(it => ({ n: ++k, runs: it.runs || [] }))
     }))
   };
 }
@@ -263,10 +263,10 @@ function ementaNormalizada() {
 function renderHTML() {
   const E = ementaNormalizada();
   let h = '<p class="cabecalho"><span class="rot">EMENTA:</span> ' +
-          E.cabecalho.replace(/&/g,"&amp;").replace(/</g,"&lt;") + '</p>';
+          esc(E.cabecalho) + '</p>';
   E.blocos.forEach(bl => {
     h += '<section class="bloco"><h2 class="bloco-titulo">' +
-         bl.titulo.replace(/</g,"&lt;") + '</h2>';
+         esc(bl.titulo) + '</h2>';
     bl.itens.forEach(it => {
       h += '<p class="item"><span class="n">' + it.n + '.</span><span>' +
            runsHTML(it.runs) + '</span></p>';
@@ -449,5 +449,10 @@ document.getElementById("btnDocx").addEventListener("click", () => {
 });
 
 /* init */
-renderHTML();
+try {
+  renderHTML();
+} catch (e) {
+  document.getElementById("doc").textContent =
+    "Não foi possível montar a ementa — dados do bloco EMENTA malformados: " + e.message;
+}
 </script>
