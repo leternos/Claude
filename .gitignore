@@ -5,6 +5,9 @@
 .claude/skills/ementario/entradas/
 .claude/skills/ementario/saidas/
 
+# Arquivos de trabalho / rascunho (ex.: fontes de artifacts)
+scratchpad/
+
 # Python
 __pycache__/
 *.pyc
