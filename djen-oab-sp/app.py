@@ -63,9 +63,9 @@ PAGINA = """<!DOCTYPE html>
 </head>
 <body>
 <header class="topo">
-  <h1>DJEN — Publicações da OAB <span class="oab" id="tituloOab">…</span></h1>
-  <p class="sub">Diário de Justiça Eletrônico Nacional · fonte: API pública
-     comunicaapi.pje.jus.br (CNJ)</p>
+  <h1 id="tituloNome">Publicações do DJEN</h1>
+  <p class="sub">OAB <span class="oab" id="tituloOab">…</span> · Diário de Justiça
+     Eletrônico Nacional · fonte: API pública comunicaapi.pje.jus.br (CNJ)</p>
 </header>
 <main>
   <div class="barra">
@@ -92,6 +92,9 @@ let OAB = "", UF = "SP";
 fetch("/api/config").then(r => r.json()).then(cfg => {
   OAB = cfg.numeroOab || ""; UF = cfg.ufOab || "SP";
   document.getElementById("tituloOab").textContent = OAB ? `${OAB}/${UF}` : "(não configurada)";
+  if (cfg.nomeAdvogado)
+    document.getElementById("tituloNome").textContent =
+      `${cfg.nomeAdvogado} — Publicações do DJEN`;
   carregar();
 });
 
@@ -189,7 +192,7 @@ class Handler(BaseHTTPRequestHandler):
             elif url.path == "/api/config":
                 cfg = carregar_config()
                 self._json({k: cfg.get(k, "") for k in
-                            ("numeroOab", "ufOab", "siglaTribunal")})
+                            ("numeroOab", "ufOab", "nomeAdvogado", "siglaTribunal")})
             elif url.path == "/api/search":
                 itens, total = self._buscar(q)
                 self._json({"total": total, "itens": itens})

@@ -41,6 +41,7 @@ def main():
     cfg = carregar_config()
     numero_oab = str(cfg.get("numeroOab", "")).strip()
     uf_oab = cfg.get("ufOab", "SP")
+    nome_adv = str(cfg.get("nomeAdvogado", "")).strip()
     if not numero_oab:
         raise SystemExit("Configure 'numeroOab' em config.json (ou pela interface web) "
                          "antes de rodar a exportação diária.")
@@ -58,8 +59,10 @@ def main():
     arq_csv = base.with_suffix(".csv")
     arq_html = base.with_suffix(".html")
     arq_json = base.with_suffix(".json")
+    titulo_html = (f"{nome_adv} — " if nome_adv else "") + \
+        f"DJEN OAB {numero_oab}/{uf_oab} — {data}"
     corpo_html = djen.gerar_html(
-        itens, f"DJEN — OAB {numero_oab}/{uf_oab} — {data}",
+        itens, titulo_html,
         f"{len(itens)} publicação(ões) disponibilizada(s) em {data}")
     arq_csv.write_text(djen.gerar_csv(itens), encoding="utf-8")
     arq_html.write_text(corpo_html, encoding="utf-8")

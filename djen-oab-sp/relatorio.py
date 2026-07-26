@@ -38,13 +38,14 @@ def main():
     if not oab:
         raise SystemExit("Configure 'numeroOab' em config.json antes de gerar o relatório.")
 
+    nome = str(cfg.get("nomeAdvogado", "")).strip()
     data = args.data or djen.hoje_brasilia().isoformat()
     itens, _ = djen.buscar_comunicacoes(
         numero_oab=oab, uf_oab=uf, data_inicio=data, data_fim=data,
         sigla_tribunal=cfg.get("siglaTribunal", ""))
+    titulo = (f"{nome} — " if nome else "") + f"DJEN OAB {oab}/{uf} — {data}"
     html = djen.gerar_html(
-        itens, f"DJEN — OAB {oab}/{uf} — {data}",
-        f"{len(itens)} publicação(ões) disponibilizada(s) em {data}")
+        itens, titulo, f"{len(itens)} publicação(ões) disponibilizada(s) em {data}")
 
     if args.stdout:
         sys.stdout.write(html)
