@@ -202,15 +202,21 @@ aperta **Exportar DOCX**. Isso mantém a saída rápida e sem ruído.
 3. **Remova a linha do "Modelo ilustrativo"** (`<p class="note" …>`) do arquivo
    preenchido — ela só serve ao template de exemplo.
 
-4. **Publique o arquivo como artifact** (ferramenta Artifact) para renderizar o
-   cartão no chat. Título "Ementa — TED OAB/SP", favicon ⚖️.
+4. **Envie o cartão inline na conversa** com a ferramenta `SendUserFile`,
+   passando o arquivo preenchido com `display: "render"` — o cartão abre
+   direto na resposta, no painel da conversa, sem publicar página externa e
+   sem abrir outra janela. Sem legenda (`caption`) ou, no máximo, o número do
+   processo.
 
 5. **Pare.** Nada além do cartão — sem introdução, sem resumo, sem `.docx`, sem
    observações finais.
 
-**Fallback sem Artifact:** se o ambiente não dispuser da ferramenta Artifact,
-entregue o **texto da ementa** (quatro blocos, numeração contínua) direto no
-chat e, havendo shell, também o `.docx` — sem o botão Exportar do cartão, o
-arquivo volta a ser entregue junto. Gere-o gravando a ementa num `.md` com os
-**rótulos entre `**`** (é o que vira negrito) e cada item numerado em linha
-própria, e rodando `python3 scripts/gerar_docx.py <ementa.md>`.
+**Fallbacks, nesta ordem:**
+1. Sem `SendUserFile` → publique o arquivo com a ferramenta **Artifact**
+   (título "Ementa — TED OAB/SP", favicon ⚖️) e pare.
+2. Sem nenhuma das duas → entregue o **texto da ementa** (quatro blocos,
+   numeração contínua) direto no chat e, havendo shell, também o `.docx` —
+   sem o botão Exportar do cartão, o arquivo volta a ser entregue junto.
+   Gere-o gravando a ementa num `.md` com os **rótulos entre `**`** (é o que
+   vira negrito) e cada item numerado em linha própria, e rodando
+   `python3 scripts/gerar_docx.py <ementa.md>`.
