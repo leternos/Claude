@@ -135,6 +135,8 @@ endpoints do webapp — sem depender da rede.
 | --- | --- |
 | `app.py` | Painel local (porta 8859), sem formulário, OAB fixa do config |
 | `relatorio.py` | Gera o relatório HTML do dia (sem argumentos) e abre no navegador |
+| `verificar.py` | Autoteste do ambiente (config, credenciais, acesso ao DJEN) |
+| `COWORK.md` | Guia para rodar no Claude Cowork local (com dados reais) |
 | `djen.py` | Cliente da API do DJEN (com suporte a `DJEN_PROXY`) + geradores |
 | `daily_export.py` | Rotina diária: busca do dia, exporta e envia e-mail |
 | `notificacao.py` | Notificações: e-mail (SMTP/SendGrid) e WhatsApp (Twilio) |
