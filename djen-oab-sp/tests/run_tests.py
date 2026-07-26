@@ -11,6 +11,7 @@ import sys
 import threading
 import time
 import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -128,6 +129,57 @@ def main():
         verificar("/api/config responde", resp_erro.status == 200)
     finally:
         app.terminate()
+
+    print("7. lambda_handler.py (AWS Lambda, subprocesso)")
+    recebido_sg = {}
+
+    class _MockSendGrid(BaseHTTPRequestHandler):
+        def do_POST(self):
+            n = int(self.headers.get("Content-Length", 0))
+            recebido_sg["auth"] = self.headers.get("Authorization")
+            recebido_sg["payload"] = json.loads(self.rfile.read(n))
+            self.send_response(202)
+            self.end_headers()
+
+        def log_message(self, *a):
+            pass
+
+    servidor_sg = ThreadingHTTPServer(("127.0.0.1", 0), _MockSendGrid)
+    porta_sg = servidor_sg.server_address[1]
+    threading.Thread(target=servidor_sg.serve_forever, daemon=True).start()
+
+    env_lambda = {
+        **os.environ,
+        "DJEN_API_BASE": f"http://127.0.0.1:{porta}",
+        "DJEN_SENDGRID_URL": f"http://127.0.0.1:{porta_sg}/v3/mail/send",
+        "PYTHONPATH": os.pathsep.join([str(RAIZ), str(RAIZ / "aws-lambda")]),
+        "NUMERO_OAB": "123456", "UF_OAB": "SP",
+        "NOME_ADVOGADO": "Fulano de Tal",
+        "EMAIL_HABILITADO": "true", "EMAIL_PROVEDOR": "sendgrid",
+        "EMAIL_PARA": "gcforte@me.com", "EMAIL_DE": "gcforte@me.com",
+        "EMAIL_DE_NOME": "DJEN Teste", "ENVIAR_QUANDO_VAZIO": "true",
+        "SENDGRID_API_KEY": "SG.teste-fake",
+        "WHATSAPP_HABILITADO": "false",
+    }
+    proc = subprocess.run(
+        [sys.executable, "-c", "import lambda_handler; lambda_handler.handler({'data': '2026-07-17'}, None)"],
+        cwd=RAIZ, capture_output=True, text=True, timeout=60, env=env_lambda)
+    verificar("saída 0", proc.returncode == 0, proc.stderr[-400:])
+    resultado = {}
+    try:
+        resultado = json.loads(proc.stdout.strip().splitlines()[-1])
+    except (json.JSONDecodeError, IndexError):
+        pass
+    verificar("total = 130", resultado.get("total") == 130, proc.stdout)
+    verificar("email_enviado", resultado.get("email_enviado") is True)
+    verificar("SendGrid recebeu o POST autenticado",
+              recebido_sg.get("auth") == "Bearer SG.teste-fake")
+    verificar("assunto e destinatário corretos",
+              recebido_sg.get("payload", {}).get("subject", "").startswith("DJEN OAB 123456/SP")
+              and recebido_sg.get("payload", {})
+                  .get("personalizations", [{}])[0].get("to", [{}])[0].get("email") == "gcforte@me.com")
+    verificar("anexos CSV+HTML no e-mail",
+              len(recebido_sg.get("payload", {}).get("attachments", [])) == 2)
 
     print()
     if FALHAS:

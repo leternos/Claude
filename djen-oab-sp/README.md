@@ -23,6 +23,13 @@ export DJEN_PROXY="http://usuario:senha@meu-proxy-br:8080"
 python3 relatorio.py        # a requisição ao CNJ sai pelo IP do proxy
 ```
 
+### Opção serverless e grátis: AWS Lambda (`aws-lambda/`)
+
+Em vez de manter uma máquina/VPS ligada, o agendamento das 5:59 também roda
+como função **AWS Lambda** em `sa-east-1` (São Paulo) + **EventBridge
+Scheduler** — sem custo no seu volume de uso (dentro do "Always Free" da AWS).
+Veja `aws-lambda/README.md` para o passo a passo completo.
+
 Sem `DJEN_PROXY`, as requisições saem pelo IP local da máquina.
 
 Sem dependências externas: só Python 3.9+ (biblioteca padrão).
@@ -142,4 +149,5 @@ endpoints do webapp — sem depender da rede.
 | `notificacao.py` | Notificações: e-mail (SMTP/SendGrid) e WhatsApp (Twilio) |
 | `config.json` | OAB monitorada e configuração de e-mail/provedor |
 | `agendamento/` | Instalador de cron e modelo de launchd (5:59) |
+| `aws-lambda/` | Port serverless: Lambda (sa-east-1) + EventBridge Scheduler, grátis |
 | `tests/` | API simulada + testes de ponta a ponta |

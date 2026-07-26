@@ -79,7 +79,7 @@ def _enviar_smtp(cfg, assunto, corpo_txt, corpo_html, anexos):
 
 
 # ------------------------------------------------------------ SendGrid --------
-SENDGRID_URL = "https://api.sendgrid.com/v3/mail/send"
+SENDGRID_URL = os.environ.get("DJEN_SENDGRID_URL", "https://api.sendgrid.com/v3/mail/send")
 
 
 def montar_payload_sendgrid(cfg, assunto, corpo_txt, corpo_html, anexos) -> dict:
