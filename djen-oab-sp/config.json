@@ -1,0 +1,23 @@
+{
+  "numeroOab": "124536",
+  "ufOab": "SP",
+  "nomeAdvogado": "Antonio Carlos Monteiro da Silva Filho",
+  "siglaTribunal": "",
+  "email": {
+    "habilitado": true,
+    "provedor": "sendgrid",
+    "para": ["gcforte@me.com"],
+    "de": "gcforte@me.com",
+    "de_nome": "DJEN OAB 124536/SP",
+    "smtp_host": "smtp.mail.me.com",
+    "smtp_porta": 587,
+    "smtp_usuario": "gcforte@me.com",
+    "enviar_quando_vazio": true
+  },
+  "whatsapp": {
+    "habilitado": false,
+    "de": "whatsapp:+14155238886",
+    "para": [],
+    "enviar_quando_vazio": false
+  }
+}

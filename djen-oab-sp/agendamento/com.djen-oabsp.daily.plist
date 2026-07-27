@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- macOS: agenda a exportação diária do DJEN às 5:59.
+     1. Ajuste os caminhos abaixo (troque /CAMINHO/PARA pelo diretório real).
+     2. Copie para ~/Library/LaunchAgents/ e rode:
+        launchctl load ~/Library/LaunchAgents/com.djen-oabsp.daily.plist -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.djen-oabsp.daily</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>daily_export.py</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/CAMINHO/PARA/djen-oab-sp</string>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>5</integer>
+    <key>Minute</key>
+    <integer>59</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/CAMINHO/PARA/djen-oab-sp/exports/daily.log</string>
+  <key>StandardErrorPath</key>
+  <string>/CAMINHO/PARA/djen-oab-sp/exports/daily.log</string>
+</dict>
+</plist>

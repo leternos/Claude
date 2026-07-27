@@ -1,0 +1,6 @@
+exports/
+.smtp_senha
+.sendgrid_key
+.twilio_sid
+.twilio_token
+__pycache__/
