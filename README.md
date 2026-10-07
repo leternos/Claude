@@ -37,12 +37,28 @@ Ou invoque sem argumento e cole o rascunho quando solicitado:
 O detalhamento completo do comportamento fica em
 [`.claude/skills/otimizar-prompt/SKILL.md`](.claude/skills/otimizar-prompt/SKILL.md).
 
+## `/rs`
+
+Orça uma lista de compras no **Pão de Açúcar** e no **Santa Luzia** com os
+preços do dia nos sites das duas lojas e devolve uma tabela comparativa item a
+item, com o total de cada loja.
+
+```
+/rs 2 doritos, 1 pack de coca zero 600ml, 5 kg de tangerina
+```
+
+Ler os sites exige acesso de rede a `paodeacucar.com` e `santaluzia.com.br`
+(ou um navegador conectado). Sem isso, a skill avisa e entrega só uma
+estimativa rotulada como tal.
+
 ## Estrutura
 
 ```
 .claude/
 └── skills/
-    └── otimizar-prompt/
+    ├── otimizar-prompt/
+    │   └── SKILL.md
+    └── rs/
         └── SKILL.md
 ```
 
