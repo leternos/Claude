@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comparador de Arquivos — versão estática</title>
+<style>
+  :root {
+    --fundo: #f3f2f1;            /* cinza de aplicativo Office */
+    --papel: #ffffff;
+    --tinta: #252423;
+    --tinta-suave: #605e5c;
+    --borda: #e1dfdd;
+    --azul: #2b579a;             /* azul Word */
+    --vermelho: #c43e1c;         /* remoções */
+    --vermelho-fundo: #fdefec;
+    --verde: #107c41;            /* adições */
+    --verde-fundo: #e9f5ee;
+    --ambar-fundo: #fff8e6;      /* linhas alteradas */
+    --ambar-barra: #f2c811;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fundo);
+    color: var(--tinta);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  header.topo {
+    background: var(--azul);
+    color: #fff;
+    padding: 0.7rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  header.topo .logotipo {
+    background: #fff;
+    color: var(--azul);
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 0.1rem 0.45rem;
+    font-size: 1.05rem;
+  }
+  header.topo h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+  header.topo .selo {
+    margin-left: auto;
+    font-size: 0.75rem;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 999px;
+    padding: 0.15rem 0.7rem;
+  }
+  main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  .oculto { display: none !important; }
+
+  /* ---------- tela inicial ---------- */
+  .cartao {
+    background: var(--papel);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    padding: 2rem;
+    max-width: 860px;
+    margin: 2rem auto;
+  }
+  .cartao h2 { margin-top: 0; font-weight: 600; }
+  .cartao p.descricao { color: var(--tinta-suave); margin-bottom: 1.6rem; }
+  .erro {
+    background: var(--vermelho-fundo);
+    border: 1px solid var(--vermelho);
+    color: var(--vermelho);
+    border-radius: 6px;
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.2rem;
+  }
+  .zonas { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  .zona {
+    flex: 1 1 260px;
+    border: 2px dashed var(--borda);
+    border-radius: 8px;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .zona:hover, .zona.arrastando { border-color: var(--azul); background: #f5f8fd; }
+  .zona.preenchida { border-style: solid; border-color: var(--verde); background: var(--verde-fundo); }
+  .zona .rotulo { font-weight: 600; margin-bottom: 0.3rem; }
+  .zona .dica { color: var(--tinta-suave); font-size: 0.85rem; }
+  .zona .nome-arquivo {
+    margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600;
+    color: var(--verde); word-break: break-all;
+  }
+  .zona input[type="file"] { display: none; }
+  .acoes { margin-top: 1.6rem; text-align: center; }
+  button.principal {
+    background: var(--azul); color: #fff; border: none; border-radius: 6px;
+    font-size: 1rem; font-weight: 600; padding: 0.7rem 2.2rem; cursor: pointer;
+  }
+  button.principal:hover { background: #1e4e8c; }
+  button.principal:disabled { background: #a6a6a6; cursor: not-allowed; }
+  .privacidade {
+    text-align: center; color: var(--tinta-suave); font-size: 0.8rem; margin-top: 1.2rem;
+  }
+
+  /* ---------- resultado ---------- */
+  .barra-resultado {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+  .barra-resultado .arquivos { font-size: 0.95rem; color: var(--tinta-suave); }
+  .barra-resultado .arquivos strong { color: var(--tinta); }
+  .distintivos { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-left: auto; }
+  .distintivo {
+    border-radius: 999px; padding: 0.25rem 0.8rem;
+    font-size: 0.85rem; font-weight: 600; border: 1px solid transparent;
+  }
+  .distintivo.add { background: var(--verde-fundo); color: var(--verde); border-color: var(--verde); }
+  .distintivo.del { background: var(--vermelho-fundo); color: var(--vermelho); border-color: var(--vermelho); }
+  .distintivo.alt { background: var(--ambar-fundo); color: #8a6d00; border-color: var(--ambar-barra); }
+  a.voltar, button.voltar {
+    color: var(--azul); font-weight: 600; text-decoration: none;
+    background: none; border: none; cursor: pointer; font-size: inherit; padding: 0;
+    font-family: inherit;
+  }
+  a.voltar:hover, button.voltar:hover { text-decoration: underline; }
+
+  .legenda {
+    display: flex; gap: 1.2rem; flex-wrap: wrap;
+    font-size: 0.85rem; color: var(--tinta-suave); margin-bottom: 1rem;
+  }
+  .legenda .seg-del, .legenda .seg-add { padding: 0 0.2rem; }
+
+  .abas { display: flex; gap: 0.4rem; }
+  .abas button {
+    border: 1px solid var(--borda); border-bottom: none;
+    background: #faf9f8; color: var(--tinta-suave);
+    padding: 0.5rem 1.2rem; border-radius: 6px 6px 0 0;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  }
+  .abas button.ativa { background: var(--papel); color: var(--azul); }
+
+  .folha {
+    background: var(--papel);
+    border: 1px solid var(--borda);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 0 6px 6px 6px;
+    overflow-x: auto;
+  }
+  .visao { display: none; }
+  .visao.visivel { display: block; }
+
+  .documento { padding: 1.2rem 0; min-width: 100%; }
+  .linha { display: flex; align-items: baseline; }
+  .linha .num {
+    flex: 0 0 3.2rem; text-align: right; padding-right: 0.8rem;
+    color: #a19f9d; font-size: 0.75rem; user-select: none;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  .linha .conteudo {
+    flex: 1; padding: 0.1rem 1rem 0.1rem 0.4rem;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.88rem; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-word;
+    border-left: 3px solid transparent;
+  }
+  .linha .conteudo:empty::before { content: "\00a0"; }
+
+  .linha.del .conteudo { background: var(--vermelho-fundo); border-left-color: var(--vermelho); }
+  .linha.add .conteudo { background: var(--verde-fundo); border-left-color: var(--verde); }
+  .linha.alterada .conteudo { background: var(--ambar-fundo); border-left-color: var(--ambar-barra); }
+
+  .seg-del { color: var(--vermelho); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  .seg-add { color: var(--verde); text-decoration: underline; text-decoration-thickness: 1.5px; }
+
+  table.duplo { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.duplo col.gutter { width: 3.2rem; }
+  table.duplo thead th {
+    text-align: left; font-size: 0.85rem; color: var(--tinta-suave);
+    padding: 0.6rem 1rem; border-bottom: 1px solid var(--borda);
+    background: #faf9f8; font-weight: 600;
+  }
+  table.duplo td { vertical-align: top; }
+  table.duplo td.num {
+    text-align: right; padding: 0.1rem 0.8rem 0.1rem 0;
+    color: #a19f9d; font-size: 0.75rem; user-select: none;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  table.duplo td.conteudo {
+    padding: 0.1rem 1rem 0.1rem 0.4rem;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.88rem; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-word;
+    border-left: 3px solid transparent;
+  }
+  table.duplo td.conteudo:empty::before { content: "\00a0"; }
+  table.duplo td.meio { border-left: 1px solid var(--borda); }
+  td.conteudo.del { background: var(--vermelho-fundo); border-left-color: var(--vermelho); }
+  td.conteudo.add { background: var(--verde-fundo); border-left-color: var(--verde); }
+  td.conteudo.alterada { background: var(--ambar-fundo); border-left-color: var(--ambar-barra); }
+  td.conteudo.vazia { background: repeating-linear-gradient(45deg, #fafafa, #fafafa 6px, #f1f1f1 6px, #f1f1f1 12px); }
+
+  .aviso-identicos {
+    background: var(--verde-fundo); border: 1px solid var(--verde); color: var(--verde);
+    border-radius: 6px; padding: 0.7rem 1rem; margin-bottom: 1rem; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<header class="topo">
+  <span class="logotipo">D</span>
+  <h1>Comparador de Arquivos</h1>
+  <span class="selo">100% no navegador — nada é enviado</span>
+</header>
+<main>
+  <div id="tela-inicial">
+    <div class="cartao">
+      <h2>Comparar dois arquivos</h2>
+      <p class="descricao">
+        Escolha o arquivo original e o modificado — texto (txt, md, código,
+        csv…) ou Word (<strong>.docx</strong> e <strong>.doc</strong>). O
+        resultado sai com marcação no estilo do Word:
+        <span class="seg-del">vermelho tachado</span> para o que saiu,
+        <span class="seg-add">verde sublinhado</span> para o que entrou e
+        destaque amarelo nas linhas alteradas.
+      </p>
+      <div class="erro oculto" id="erro"></div>
+      <div class="zonas">
+        <label class="zona" id="zona-original">
+          <div class="rotulo">Arquivo original</div>
+          <div class="dica">Clique para escolher ou arraste o arquivo até aqui</div>
+          <div class="nome-arquivo" id="nome-original"></div>
+          <input type="file" id="campo-original">
+        </label>
+        <label class="zona" id="zona-modificado">
+          <div class="rotulo">Arquivo modificado</div>
+          <div class="dica">Clique para escolher ou arraste o arquivo até aqui</div>
+          <div class="nome-arquivo" id="nome-modificado"></div>
+          <input type="file" id="campo-modificado">
+        </label>
+      </div>
+      <div class="acoes">
+        <button type="button" class="principal" id="botao-comparar" disabled>Comparar</button>
+      </div>
+      <p class="privacidade">
+        Esta página funciona sem servidor: os arquivos são lidos e comparados
+        localmente, no seu navegador.
+      </p>
+    </div>
+  </div>
+
+  <div id="tela-resultado" class="oculto">
+    <div class="barra-resultado">
+      <div class="arquivos">
+        <strong id="rotulo-original"></strong> → <strong id="rotulo-modificado"></strong>
+        &nbsp;·&nbsp; <button type="button" class="voltar" id="botao-nova">Nova comparação</button>
+      </div>
+      <div class="distintivos">
+        <span class="distintivo add" id="dist-add"></span>
+        <span class="distintivo del" id="dist-del"></span>
+        <span class="distintivo alt" id="dist-alt"></span>
+      </div>
+    </div>
+    <div class="aviso-identicos oculto" id="aviso-identicos">
+      Os dois arquivos têm o mesmo conteúdo — nenhuma diferença encontrada.
+    </div>
+    <div class="legenda">
+      <span><span class="seg-del">texto removido</span></span>
+      <span><span class="seg-add">texto adicionado</span></span>
+      <span><span style="background: var(--ambar-fundo); padding: 0 0.3rem;">linha alterada</span></span>
+    </div>
+    <div class="abas">
+      <button type="button" id="aba-marcado" class="ativa">Documento marcado</button>
+      <button type="button" id="aba-duplo">Lado a lado</button>
+    </div>
+    <div class="folha">
+      <div class="visao visivel" id="visao-marcado">
+        <div class="documento" id="documento-marcado"></div>
+      </div>
+      <div class="visao" id="visao-duplo">
+        <table class="duplo">
+          <colgroup>
+            <col class="gutter"><col><col class="gutter"><col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th colspan="2" id="cabecalho-original"></th>
+              <th colspan="2" class="meio" id="cabecalho-modificado"></th>
+            </tr>
+          </thead>
+          <tbody id="corpo-duplo"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ===== INICIO-MOTOR =====
+ * Porte fiel de diffing.py (Python/difflib) para JavaScript.
+ * Comparação em dois níveis: linhas e, dentro de pares alterados, tokens
+ * (palavras/espaços). Blocos "replace" são alinhados pelo par de linhas mais
+ * similar, como no difflib.Differ.
+ */
+
+const LIMIAR_SIMILARIDADE = 0.4;
+const MAX_COMBINACOES = 40000;
+
+/* Reimplementação do difflib.SequenceMatcher (com autojunk desligado). */
+class SequenceMatcher {
+  constructor(a, b) {
+    this.a = a;
+    this.b = b;
+    this.b2j = new Map();
+    b.forEach((elemento, j) => {
+      const lista = this.b2j.get(elemento);
+      if (lista) lista.push(j);
+      else this.b2j.set(elemento, [j]);
+    });
+    this._blocos = null;
+  }
+
+  encontrarMaiorCasamento(alo, ahi, blo, bhi) {
+    let besti = alo, bestj = blo, bestsize = 0;
+    let j2len = new Map();
+    for (let i = alo; i < ahi; i++) {
+      const novo = new Map();
+      const indices = this.b2j.get(this.a[i]) || [];
+      for (const j of indices) {
+        if (j < blo) continue;
+        if (j >= bhi) break;
+        const k = (j2len.get(j - 1) || 0) + 1;
+        novo.set(j, k);
+        if (k > bestsize) {
+          besti = i - k + 1;
+          bestj = j - k + 1;
+          bestsize = k;
+        }
+      }
+      j2len = novo;
+    }
+    return [besti, bestj, bestsize];
+  }
+
+  blocosCasados() {
+    if (this._blocos) return this._blocos;
+    const fila = [[0, this.a.length, 0, this.b.length]];
+    const achados = [];
+    while (fila.length) {
+      const [alo, ahi, blo, bhi] = fila.pop();
+      const [i, j, k] = this.encontrarMaiorCasamento(alo, ahi, blo, bhi);
+      if (k) {
+        achados.push([i, j, k]);
+        fila.push([alo, i, blo, j]);
+        fila.push([i + k, ahi, j + k, bhi]);
+      }
+    }
+    achados.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+    // funde blocos adjacentes
+    let i1 = 0, j1 = 0, k1 = 0;
+    const blocos = [];
+    for (const [i2, j2, k2] of achados) {
+      if (i1 + k1 === i2 && j1 + k1 === j2) {
+        k1 += k2;
+      } else {
+        if (k1) blocos.push([i1, j1, k1]);
+        i1 = i2; j1 = j2; k1 = k2;
+      }
+    }
+    if (k1) blocos.push([i1, j1, k1]);
+    blocos.push([this.a.length, this.b.length, 0]);
+    this._blocos = blocos;
+    return blocos;
+  }
+
+  opcodes() {
+    let i = 0, j = 0;
+    const resultado = [];
+    for (const [ai, bj, tamanho] of this.blocosCasados()) {
+      let tag = "";
+      if (i < ai && j < bj) tag = "replace";
+      else if (i < ai) tag = "delete";
+      else if (j < bj) tag = "insert";
+      if (tag) resultado.push([tag, i, ai, j, bj]);
+      i = ai + tamanho;
+      j = bj + tamanho;
+      if (tamanho) resultado.push(["equal", ai, i, bj, j]);
+    }
+    return resultado;
+  }
+
+  ratio() {
+    const casados = this.blocosCasados().reduce((soma, b) => soma + b[2], 0);
+    const total = this.a.length + this.b.length;
+    return total ? (2 * casados) / total : 1;
+  }
+}
+
+function tokenizar(linha) {
+  return linha.match(/\s+|\S+/g) || [];
+}
+
+function ratioLinhas(a, b) {
+  return new SequenceMatcher([...a], [...b]).ratio();
+}
+
+/* Divide como o str.splitlines() do Python (sem o separador final). */
+function dividirLinhas(texto) {
+  if (texto === "") return [];
+  const linhas = texto.split(/\r\n|\r|\n/);
+  if (linhas[linhas.length - 1] === "") linhas.pop();
+  return linhas;
+}
+
+function segmentosInline(original, modificado) {
+  const matcher = new SequenceMatcher(tokenizar(original), tokenizar(modificado));
+  const mesclada = [], ladoOriginal = [], ladoModificado = [];
+  for (const [op, i1, i2, j1, j2] of matcher.opcodes()) {
+    const trechoA = matcher.a.slice(i1, i2).join("");
+    const trechoB = matcher.b.slice(j1, j2).join("");
+    if (op === "equal") {
+      mesclada.push({ tipo: "igual", texto: trechoA });
+      ladoOriginal.push({ tipo: "igual", texto: trechoA });
+      ladoModificado.push({ tipo: "igual", texto: trechoB });
+    } else if (op === "delete") {
+      mesclada.push({ tipo: "del", texto: trechoA });
+      ladoOriginal.push({ tipo: "del", texto: trechoA });
+    } else if (op === "insert") {
+      mesclada.push({ tipo: "add", texto: trechoB });
+      ladoModificado.push({ tipo: "add", texto: trechoB });
+    } else {
+      mesclada.push({ tipo: "del", texto: trechoA });
+      mesclada.push({ tipo: "add", texto: trechoB });
+      ladoOriginal.push({ tipo: "del", texto: trechoA });
+      ladoModificado.push({ tipo: "add", texto: trechoB });
+    }
+  }
+  return [mesclada, ladoOriginal, ladoModificado];
+}
+
+class Montador {
+  constructor() {
+    this.unificado = [];
+    this.ladoALado = [];
+    this.estatisticas = { adicionadas: 0, removidas: 0, alteradas: 0, iguais: 0 };
+  }
+
+  igual(texto, numO, numM) {
+    const seg = [{ tipo: "igual", texto }];
+    this.unificado.push({ tipo: "igual", num_original: numO, num_modificado: numM, segmentos: seg });
+    this.ladoALado.push({
+      original: { tipo: "igual", numero: numO, segmentos: seg },
+      modificado: { tipo: "igual", numero: numM, segmentos: seg },
+    });
+    this.estatisticas.iguais += 1;
+  }
+
+  remocao(texto, numO) {
+    const seg = [{ tipo: "del", texto }];
+    this.unificado.push({ tipo: "del", num_original: numO, num_modificado: null, segmentos: seg });
+    this.ladoALado.push({
+      original: { tipo: "del", numero: numO, segmentos: seg },
+      modificado: { tipo: "vazia", numero: null, segmentos: [] },
+    });
+    this.estatisticas.removidas += 1;
+  }
+
+  adicao(texto, numM) {
+    const seg = [{ tipo: "add", texto }];
+    this.unificado.push({ tipo: "add", num_original: null, num_modificado: numM, segmentos: seg });
+    this.ladoALado.push({
+      original: { tipo: "vazia", numero: null, segmentos: [] },
+      modificado: { tipo: "add", numero: numM, segmentos: seg },
+    });
+    this.estatisticas.adicionadas += 1;
+  }
+
+  alteracao(original, modificado, numO, numM) {
+    const [mesclada, ladoO, ladoM] = segmentosInline(original, modificado);
+    this.unificado.push({ tipo: "alterada", num_original: numO, num_modificado: numM, segmentos: mesclada });
+    this.ladoALado.push({
+      original: { tipo: "alterada", numero: numO, segmentos: ladoO },
+      modificado: { tipo: "alterada", numero: numM, segmentos: ladoM },
+    });
+    this.estatisticas.alteradas += 1;
+  }
+
+  trocaIntegral(original, modificado, numO, numM) {
+    const segDel = [{ tipo: "del", texto: original }];
+    const segAdd = [{ tipo: "add", texto: modificado }];
+    this.unificado.push({ tipo: "del", num_original: numO, num_modificado: null, segmentos: segDel });
+    this.unificado.push({ tipo: "add", num_original: null, num_modificado: numM, segmentos: segAdd });
+    this.ladoALado.push({
+      original: { tipo: "del", numero: numO, segmentos: segDel },
+      modificado: { tipo: "add", numero: numM, segmentos: segAdd },
+    });
+    this.estatisticas.removidas += 1;
+    this.estatisticas.adicionadas += 1;
+  }
+}
+
+function replacePosicional(montador, linhasO, linhasM, i1, i2, j1, j2) {
+  const pares = Math.max(i2 - i1, j2 - j1);
+  for (let k = 0; k < pares; k++) {
+    const temO = i1 + k < i2;
+    const temM = j1 + k < j2;
+    if (temO && temM) {
+      const linhaO = linhasO[i1 + k];
+      const linhaM = linhasM[j1 + k];
+      if (ratioLinhas(linhaO, linhaM) >= LIMIAR_SIMILARIDADE) {
+        montador.alteracao(linhaO, linhaM, i1 + k + 1, j1 + k + 1);
+      } else {
+        montador.trocaIntegral(linhaO, linhaM, i1 + k + 1, j1 + k + 1);
+      }
+    } else if (temO) {
+      montador.remocao(linhasO[i1 + k], i1 + k + 1);
+    } else {
+      montador.adicao(linhasM[j1 + k], j1 + k + 1);
+    }
+  }
+}
+
+function replacePorSimilaridade(montador, linhasO, linhasM, i1, i2, j1, j2) {
+  if (i1 >= i2 && j1 >= j2) return;
+  if (i1 >= i2) {
+    for (let j = j1; j < j2; j++) montador.adicao(linhasM[j], j + 1);
+    return;
+  }
+  if (j1 >= j2) {
+    for (let i = i1; i < i2; i++) montador.remocao(linhasO[i], i + 1);
+    return;
+  }
+  if ((i2 - i1) * (j2 - j1) > MAX_COMBINACOES) {
+    replacePosicional(montador, linhasO, linhasM, i1, i2, j1, j2);
+    return;
+  }
+
+  let melhorRatio = -1, melhorI = i1, melhorJ = j1;
+  for (let i = i1; i < i2; i++) {
+    for (let j = j1; j < j2; j++) {
+      const r = ratioLinhas(linhasO[i], linhasM[j]);
+      if (r > melhorRatio) {
+        melhorRatio = r;
+        melhorI = i;
+        melhorJ = j;
+      }
+    }
+  }
+
+  if (melhorRatio < LIMIAR_SIMILARIDADE) {
+    replacePosicional(montador, linhasO, linhasM, i1, i2, j1, j2);
+    return;
+  }
+
+  replacePorSimilaridade(montador, linhasO, linhasM, i1, melhorI, j1, melhorJ);
+  if (linhasO[melhorI] === linhasM[melhorJ]) {
+    montador.igual(linhasO[melhorI], melhorI + 1, melhorJ + 1);
+  } else {
+    montador.alteracao(linhasO[melhorI], linhasM[melhorJ], melhorI + 1, melhorJ + 1);
+  }
+  replacePorSimilaridade(montador, linhasO, linhasM, melhorI + 1, i2, melhorJ + 1, j2);
+}
+
+function compararTextos(textoOriginal, textoModificado) {
+  const linhasO = dividirLinhas(textoOriginal);
+  const linhasM = dividirLinhas(textoModificado);
+  const matcher = new SequenceMatcher(linhasO, linhasM);
+  const montador = new Montador();
+
+  for (const [op, i1, i2, j1, j2] of matcher.opcodes()) {
+    if (op === "equal") {
+      for (let k = 0; k < i2 - i1; k++) {
+        montador.igual(linhasO[i1 + k], i1 + k + 1, j1 + k + 1);
+      }
+    } else if (op === "delete") {
+      for (let i = i1; i < i2; i++) montador.remocao(linhasO[i], i + 1);
+    } else if (op === "insert") {
+      for (let j = j1; j < j2; j++) montador.adicao(linhasM[j], j + 1);
+    } else {
+      replacePorSimilaridade(montador, linhasO, linhasM, i1, i2, j1, j2);
+    }
+  }
+
+  const est = montador.estatisticas;
+  return {
+    unificado: montador.unificado,
+    lado_a_lado: montador.ladoALado,
+    estatisticas: est,
+    identicos: est.adicionadas + est.removidas + est.alteradas === 0,
+  };
+}
+/* ===== FIM-MOTOR ===== */
+
+/* ===== INICIO-EXTRACAO =====
+ * Extração de texto de .docx (ZIP + WordprocessingML) e .doc (Word 97-2003,
+ * contêiner OLE/CFB com piece table), espelhando extracao.py.
+ */
+
+async function inflateRaw(dados) {
+  if (typeof DecompressionStream === "undefined") {
+    throw new Error(
+      "Este navegador não sabe descompactar .docx — atualize-o e tente de novo."
+    );
+  }
+  const fluxo = new Blob([dados]).stream()
+    .pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(fluxo).arrayBuffer());
+}
+
+/* Lê uma entrada de um ZIP (o suficiente para pacotes .docx). */
+async function lerEntradaZip(buffer, nomeProcurado) {
+  const bytes = new Uint8Array(buffer);
+  const dv = new DataView(buffer);
+  // EOCD: assinatura 0x06054b50, varrida a partir do fim
+  let eocd = -1;
+  const limite = Math.max(0, bytes.length - 65558);
+  for (let i = bytes.length - 22; i >= limite; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("o arquivo .docx está corrompido ou incompleto");
+  const totalEntradas = dv.getUint16(eocd + 10, true);
+  let pos = dv.getUint32(eocd + 16, true); // início do diretório central
+  const decodificadorNome = new TextDecoder("utf-8");
+  for (let e = 0; e < totalEntradas; e++) {
+    if (dv.getUint32(pos, true) !== 0x02014b50) break;
+    const metodo = dv.getUint16(pos + 10, true);
+    const tamanhoComprimido = dv.getUint32(pos + 20, true);
+    const tamNome = dv.getUint16(pos + 28, true);
+    const tamExtra = dv.getUint16(pos + 30, true);
+    const tamComentario = dv.getUint16(pos + 32, true);
+    const offsetLocal = dv.getUint32(pos + 42, true);
+    const nome = decodificadorNome.decode(bytes.subarray(pos + 46, pos + 46 + tamNome));
+    if (nome === nomeProcurado) {
+      if (dv.getUint32(offsetLocal, true) !== 0x04034b50) {
+        throw new Error("o arquivo .docx está corrompido ou incompleto");
+      }
+      const tamNomeLocal = dv.getUint16(offsetLocal + 26, true);
+      const tamExtraLocal = dv.getUint16(offsetLocal + 28, true);
+      const inicio = offsetLocal + 30 + tamNomeLocal + tamExtraLocal;
+      const comprimido = bytes.subarray(inicio, inicio + tamanhoComprimido);
+      if (metodo === 0) return comprimido.slice();
+      if (metodo === 8) return await inflateRaw(comprimido);
+      throw new Error("o arquivo .docx usa compactação não suportada");
+    }
+    pos += 46 + tamNome + tamExtra + tamComentario;
+  }
+  throw new Error("o arquivo é um pacote ZIP, mas não um documento do Word");
+}
+
+function decodificarEntidadesXml(texto) {
+  return texto.replace(/&(amp|lt|gt|quot|apos|#x?[0-9a-fA-F]+);/g, (_, ent) => {
+    if (ent === "amp") return "&";
+    if (ent === "lt") return "<";
+    if (ent === "gt") return ">";
+    if (ent === "quot") return '"';
+    if (ent === "apos") return "'";
+    const codigo = ent[1] === "x" || ent[1] === "X"
+      ? parseInt(ent.slice(2), 16)
+      : parseInt(ent.slice(1), 10);
+    return String.fromCodePoint(codigo);
+  });
+}
+
+/* Extrai o texto de word/document.xml: um parágrafo (w:p) por linha; dentro
+ * dos runs (w:r), w:t é texto, w:tab é tabulação e w:br/w:cr são quebras. */
+function extrairTextoDocumentXml(xml) {
+  const linhas = [];
+  let paragrafo = null;
+  let profundidadeRun = 0;
+  let dentroDeT = false;
+  for (const token of xml.match(/<[^>]+>|[^<]+/g) || []) {
+    if (token[0] === "<") {
+      const fechamento = token[1] === "/";
+      const autoFechada = token.endsWith("/>");
+      const nome = token.replace(/^<\/?/, "").replace(/[\s/>][\s\S]*$/, "");
+      if (nome === "w:p") {
+        if (fechamento) {
+          if (paragrafo !== null) linhas.push(paragrafo);
+          paragrafo = null;
+        } else if (autoFechada) {
+          linhas.push("");
+        } else {
+          paragrafo = "";
+        }
+      } else if (nome === "w:r") {
+        if (fechamento) profundidadeRun = Math.max(0, profundidadeRun - 1);
+        else if (!autoFechada) profundidadeRun++;
+      } else if (nome === "w:t") {
+        if (fechamento) dentroDeT = false;
+        else if (!autoFechada) dentroDeT = profundidadeRun > 0;
+      } else if (nome === "w:tab") {
+        if (!fechamento && profundidadeRun > 0 && paragrafo !== null) paragrafo += "\t";
+      } else if (nome === "w:br" || nome === "w:cr") {
+        if (!fechamento && profundidadeRun > 0 && paragrafo !== null) paragrafo += "\n";
+      }
+    } else if (dentroDeT && paragrafo !== null) {
+      paragrafo += decodificarEntidadesXml(token);
+    }
+  }
+  return linhas.join("\n");
+}
+
+async function extrairDocx(buffer) {
+  const xmlBytes = await lerEntradaZip(buffer, "word/document.xml");
+  return extrairTextoDocumentXml(new TextDecoder("utf-8").decode(xmlBytes));
+}
+
+/* Leitor mínimo de contêiner OLE/CFB (o formato do .doc legado). */
+function lerCfb(buffer) {
+  const dv = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
+  const tamSetor = 1 << dv.getUint16(0x1e, true);
+  const tamMini = 1 << dv.getUint16(0x20, true);
+  const inicioDiretorio = dv.getInt32(0x30, true);
+  const corteMini = dv.getUint32(0x38, true);
+  const inicioMiniFat = dv.getInt32(0x3c, true);
+  const inicioDifat = dv.getInt32(0x44, true);
+
+  const deslocamentoSetor = (setor) => (setor + 1) * tamSetor;
+
+  // FAT: 109 setores listados no cabeçalho + correntes DIFAT extras
+  const setoresFat = [];
+  for (let i = 0; i < 109; i++) {
+    const s = dv.getInt32(0x4c + i * 4, true);
+    if (s >= 0) setoresFat.push(s);
+  }
+  const porSetor = tamSetor / 4;
+  for (let difat = inicioDifat; difat >= 0; ) {
+    const base = deslocamentoSetor(difat);
+    for (let i = 0; i < porSetor - 1; i++) {
+      const s = dv.getInt32(base + i * 4, true);
+      if (s >= 0) setoresFat.push(s);
+    }
+    difat = dv.getInt32(base + (porSetor - 1) * 4, true);
+  }
+  const fat = [];
+  for (const s of setoresFat) {
+    const base = deslocamentoSetor(s);
+    for (let i = 0; i < porSetor; i++) fat.push(dv.getInt32(base + i * 4, true));
+  }
+
+  function lerCorrente(inicio) {
+    const partes = [];
+    let total = 0;
+    for (let s = inicio; s >= 0; s = fat[s]) {
+      const base = deslocamentoSetor(s);
+      partes.push(bytes.subarray(base, base + tamSetor));
+      total += tamSetor;
+      if (partes.length > fat.length + 1) throw new Error("o arquivo .doc está corrompido");
+    }
+    const saida = new Uint8Array(total);
+    partes.forEach((p, i) => saida.set(p, i * tamSetor));
+    return saida;
+  }
+
+  // Diretório: entradas de 128 bytes, nomes em UTF-16LE
+  const diretorio = lerCorrente(inicioDiretorio);
+  const dvDir = new DataView(diretorio.buffer, diretorio.byteOffset, diretorio.byteLength);
+  const entradas = [];
+  for (let off = 0; off + 128 <= diretorio.length; off += 128) {
+    const tamNome = dvDir.getUint16(off + 64, true);
+    const tipo = diretorio[off + 66];
+    if (tipo === 0 || tamNome < 2) continue;
+    const nome = new TextDecoder("utf-16le").decode(
+      diretorio.subarray(off, off + tamNome - 2)
+    );
+    entradas.push({
+      nome,
+      tipo,
+      inicio: dvDir.getInt32(off + 0x74, true),
+      tamanho: dvDir.getUint32(off + 0x78, true),
+    });
+  }
+  const raiz = entradas.find((e) => e.tipo === 5);
+  if (!raiz) throw new Error("o arquivo .doc está corrompido");
+
+  // MiniFAT e ministream (para fluxos menores que o corte, tipicamente 4 KB)
+  const miniFat = [];
+  if (inicioMiniFat >= 0) {
+    const dados = lerCorrente(inicioMiniFat);
+    const dvMini = new DataView(dados.buffer, dados.byteOffset, dados.byteLength);
+    for (let i = 0; i + 4 <= dados.length; i += 4) miniFat.push(dvMini.getInt32(i, true));
+  }
+  const ministream = raiz.inicio >= 0 ? lerCorrente(raiz.inicio) : new Uint8Array(0);
+
+  function abrirFluxo(nome) {
+    const entrada = entradas.find((e) => e.tipo === 2 && e.nome === nome);
+    if (!entrada) return null;
+    if (entrada.tamanho >= corteMini) {
+      return lerCorrente(entrada.inicio).subarray(0, entrada.tamanho);
+    }
+    const saida = new Uint8Array(entrada.tamanho);
+    let escrito = 0;
+    for (let s = entrada.inicio; s >= 0 && escrito < entrada.tamanho; s = miniFat[s]) {
+      const pedaco = ministream.subarray(s * tamMini, (s + 1) * tamMini);
+      const usar = Math.min(pedaco.length, entrada.tamanho - escrito);
+      saida.set(pedaco.subarray(0, usar), escrito);
+      escrito += usar;
+    }
+    return saida;
+  }
+
+  return { abrirFluxo };
+}
+
+/* Normaliza os caracteres de controle do Word 97 (mesma regra do Python). */
+function limparTextoDoc(bruto) {
+  const saida = [];
+  const pilhaCampo = [];
+  for (const ch of bruto) {
+    const codigo = ch.codePointAt(0);
+    if (codigo === 0x13) { pilhaCampo.push("instrucao"); continue; }
+    if (codigo === 0x14) {
+      if (pilhaCampo.length) pilhaCampo[pilhaCampo.length - 1] = "resultado";
+      continue;
+    }
+    if (codigo === 0x15) { pilhaCampo.pop(); continue; }
+    if (pilhaCampo.includes("instrucao")) continue;
+    if (ch === "\r" || ch === "\n" || codigo === 0x07 || codigo === 0x0b || codigo === 0x0c) {
+      saida.push("\n");
+    } else if (codigo === 0x1e) {
+      saida.push("-");
+    } else if (codigo === 0x1f || codigo === 0xfeff || (codigo < 0x20 && ch !== "\t")) {
+      continue;
+    } else {
+      saida.push(ch);
+    }
+  }
+  return saida.join("");
+}
+
+function extrairDoc(buffer) {
+  const cfb = lerCfb(buffer);
+  const word = cfb.abrirFluxo("WordDocument");
+  if (!word || word.length < 0x200) {
+    throw new Error("o arquivo não contém um documento do Word");
+  }
+  const dvWord = new DataView(word.buffer, word.byteOffset, word.byteLength);
+  if (dvWord.getUint16(0, true) !== 0xa5ec) {
+    throw new Error("o arquivo não parece ser um .doc do Word");
+  }
+  const flags = dvWord.getUint16(0x0a, true);
+  const tabela = cfb.abrirFluxo(flags & 0x0200 ? "1Table" : "0Table");
+  if (!tabela) throw new Error("o arquivo .doc está incompleto (sem fluxo de tabela)");
+  const dvTabela = new DataView(tabela.buffer, tabela.byteOffset, tabela.byteLength);
+
+  const ccpTexto = dvWord.getUint32(0x004c, true);
+  const fcClx = dvWord.getUint32(0x01a2, true);
+  const lcbClx = dvWord.getUint32(0x01a6, true);
+
+  // pula blocos Prc (0x01) até o Pcdt (0x02) com a piece table
+  let pos = fcClx;
+  const fimClx = fcClx + lcbClx;
+  while (pos < fimClx && tabela[pos] === 0x01) {
+    pos += 3 + dvTabela.getUint16(pos + 1, true);
+  }
+  if (pos >= fimClx || tabela[pos] !== 0x02) {
+    throw new Error("a estrutura interna do .doc não foi reconhecida");
+  }
+  const lcbPlc = dvTabela.getUint32(pos + 1, true);
+  const plcInicio = pos + 5;
+  const n = Math.floor((lcbPlc - 4) / 12);
+  if (n <= 0) return "";
+
+  const cps = [];
+  for (let i = 0; i <= n; i++) cps.push(dvTabela.getUint32(plcInicio + i * 4, true));
+  const cp1252 = new TextDecoder("windows-1252");
+  const utf16 = new TextDecoder("utf-16le");
+  const trechos = [];
+  for (let i = 0; i < n; i++) {
+    const fcBruto = dvTabela.getUint32(plcInicio + (n + 1) * 4 + i * 8 + 2, true);
+    const quantidade = cps[i + 1] - cps[i];
+    if (fcBruto & 0x40000000) {
+      const inicio = (fcBruto & 0x3fffffff) >>> 1;
+      trechos.push(cp1252.decode(word.subarray(inicio, inicio + quantidade)));
+    } else {
+      const inicio = fcBruto & 0x3fffffff;
+      trechos.push(utf16.decode(word.subarray(inicio, inicio + 2 * quantidade)));
+    }
+  }
+  return limparTextoDoc(trechos.join("").slice(0, ccpTexto));
+}
+
+/* Roteia pelo conteúdo: docx (ZIP), doc (OLE) ou texto puro. */
+async function extrairTexto(nome, buffer) {
+  const bytes = new Uint8Array(buffer);
+  const ehZip = bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+  const ehOle = bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0;
+  if (ehZip) return await extrairDocx(buffer);
+  if (ehOle) return extrairDoc(buffer);
+  if (bytes.includes(0)) return null;
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
+}
+/* ===== FIM-EXTRACAO ===== */
+
+/* ---------- interface ---------- */
+(function () {
+  "use strict";
+
+  const TAMANHO_MAXIMO = 5 * 1024 * 1024;
+
+  const telaInicial = document.getElementById("tela-inicial");
+  const telaResultado = document.getElementById("tela-resultado");
+  const erro = document.getElementById("erro");
+  const botao = document.getElementById("botao-comparar");
+  const campos = {
+    original: document.getElementById("campo-original"),
+    modificado: document.getElementById("campo-modificado"),
+  };
+
+  function mostrarErro(mensagem) {
+    erro.textContent = mensagem;
+    erro.classList.remove("oculto");
+  }
+
+  function limparErro() {
+    erro.classList.add("oculto");
+  }
+
+  function ligarZona(idZona, campo, idNome) {
+    const zona = document.getElementById(idZona);
+    const nome = document.getElementById(idNome);
+
+    function atualizar() {
+      const arquivo = campo.files[0];
+      nome.textContent = arquivo ? arquivo.name : "";
+      zona.classList.toggle("preenchida", Boolean(arquivo));
+      botao.disabled = !(campos.original.files.length && campos.modificado.files.length);
+    }
+
+    campo.addEventListener("change", atualizar);
+    zona.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      zona.classList.add("arrastando");
+    });
+    zona.addEventListener("dragleave", () => zona.classList.remove("arrastando"));
+    zona.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zona.classList.remove("arrastando");
+      if (e.dataTransfer.files.length > 0) {
+        campo.files = e.dataTransfer.files;
+        atualizar();
+      }
+    });
+    return atualizar;
+  }
+
+  const atualizarOriginal = ligarZona("zona-original", campos.original, "nome-original");
+  const atualizarModificado = ligarZona("zona-modificado", campos.modificado, "nome-modificado");
+
+  async function lerArquivo(arquivo) {
+    const buffer = await arquivo.arrayBuffer();
+    if (buffer.byteLength > TAMANHO_MAXIMO) {
+      throw new Error(`O arquivo “${arquivo.name}” passa do limite de 5 MB.`);
+    }
+    let texto;
+    try {
+      texto = await extrairTexto(arquivo.name, buffer);
+    } catch (excecao) {
+      throw new Error(`Não deu para ler “${arquivo.name}”: ${excecao.message}.`);
+    }
+    if (texto === null) {
+      throw new Error(
+        `O arquivo “${arquivo.name}” não parece ser texto nem documento do ` +
+        "Word (txt, md, código, csv, docx, doc…)."
+      );
+    }
+    return texto;
+  }
+
+  function escapar(texto) {
+    return texto
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+  }
+
+  function renderSegmentos(segmentos) {
+    return segmentos
+      .map((s) =>
+        s.tipo === "igual"
+          ? escapar(s.texto)
+          : `<span class="seg-${s.tipo}">${escapar(s.texto)}</span>`
+      )
+      .join("");
+  }
+
+  function plural(quantidade, singular, pluralizado) {
+    return `${quantidade} ${quantidade === 1 ? singular : pluralizado}`;
+  }
+
+  function renderResultado(nomeOriginal, nomeModificado, comparacao) {
+    document.getElementById("rotulo-original").textContent = nomeOriginal;
+    document.getElementById("rotulo-modificado").textContent = nomeModificado;
+    document.getElementById("cabecalho-original").textContent = nomeOriginal;
+    document.getElementById("cabecalho-modificado").textContent = nomeModificado;
+
+    const est = comparacao.estatisticas;
+    document.getElementById("dist-add").textContent = plural(est.adicionadas, "adicionada", "adicionadas");
+    document.getElementById("dist-del").textContent = plural(est.removidas, "removida", "removidas");
+    document.getElementById("dist-alt").textContent = plural(est.alteradas, "alterada", "alteradas");
+    document.getElementById("aviso-identicos").classList.toggle("oculto", !comparacao.identicos);
+
+    document.getElementById("documento-marcado").innerHTML = comparacao.unificado
+      .map(
+        (linha) => `<div class="linha ${linha.tipo}">` +
+          `<span class="num">${linha.num_original ?? ""}</span>` +
+          `<span class="num">${linha.num_modificado ?? ""}</span>` +
+          `<span class="conteudo">${renderSegmentos(linha.segmentos)}</span>` +
+          "</div>"
+      )
+      .join("");
+
+    document.getElementById("corpo-duplo").innerHTML = comparacao.lado_a_lado
+      .map(
+        (par) => "<tr>" +
+          `<td class="num">${par.original.numero ?? ""}</td>` +
+          `<td class="conteudo ${par.original.tipo}">${renderSegmentos(par.original.segmentos)}</td>` +
+          `<td class="num meio">${par.modificado.numero ?? ""}</td>` +
+          `<td class="conteudo ${par.modificado.tipo}">${renderSegmentos(par.modificado.segmentos)}</td>` +
+          "</tr>"
+      )
+      .join("");
+
+    telaInicial.classList.add("oculto");
+    telaResultado.classList.remove("oculto");
+  }
+
+  botao.addEventListener("click", () => {
+    limparErro();
+    const arquivoO = campos.original.files[0];
+    const arquivoM = campos.modificado.files[0];
+    if (!arquivoO || !arquivoM) return;
+    Promise.all([lerArquivo(arquivoO), lerArquivo(arquivoM)])
+      .then(([textoO, textoM]) => {
+        const comparacao = compararTextos(textoO, textoM);
+        renderResultado(arquivoO.name, arquivoM.name, comparacao);
+      })
+      .catch((excecao) => mostrarErro(excecao.message));
+  });
+
+  document.getElementById("botao-nova").addEventListener("click", () => {
+    campos.original.value = "";
+    campos.modificado.value = "";
+    atualizarOriginal();
+    atualizarModificado();
+    limparErro();
+    telaResultado.classList.add("oculto");
+    telaInicial.classList.remove("oculto");
+  });
+
+  const abaMarcado = document.getElementById("aba-marcado");
+  const abaDuplo = document.getElementById("aba-duplo");
+  const visaoMarcado = document.getElementById("visao-marcado");
+  const visaoDuplo = document.getElementById("visao-duplo");
+
+  function ativar(aba, visao, outraAba, outraVisao) {
+    aba.classList.add("ativa");
+    outraAba.classList.remove("ativa");
+    visao.classList.add("visivel");
+    outraVisao.classList.remove("visivel");
+  }
+
+  abaMarcado.addEventListener("click", () => ativar(abaMarcado, visaoMarcado, abaDuplo, visaoDuplo));
+  abaDuplo.addEventListener("click", () => ativar(abaDuplo, visaoDuplo, abaMarcado, visaoMarcado));
+
+  /* Gancho para testes automatizados (não usado no fluxo normal). */
+  window.__comparadorTeste = { compararTextos, renderResultado };
+})();
+</script>
+</body>
+</html>

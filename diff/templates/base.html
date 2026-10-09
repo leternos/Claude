@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}Comparador de Arquivos{% endblock %}</title>
+<style>
+  :root {
+    --fundo: #f3f2f1;            /* cinza de aplicativo Office */
+    --papel: #ffffff;
+    --tinta: #252423;
+    --tinta-suave: #605e5c;
+    --borda: #e1dfdd;
+    --azul: #2b579a;             /* azul Word */
+    --vermelho: #c43e1c;         /* remoções */
+    --vermelho-fundo: #fdefec;
+    --verde: #107c41;            /* adições */
+    --verde-fundo: #e9f5ee;
+    --ambar-fundo: #fff8e6;      /* linhas alteradas */
+    --ambar-barra: #f2c811;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fundo);
+    color: var(--tinta);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  header.topo {
+    background: var(--azul);
+    color: #fff;
+    padding: 0.7rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  header.topo .logotipo {
+    background: #fff;
+    color: var(--azul);
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 0.1rem 0.45rem;
+    font-size: 1.05rem;
+  }
+  header.topo h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+  header.topo a { color: #fff; text-decoration: none; }
+  main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  /* ---------- página inicial ---------- */
+  .cartao {
+    background: var(--papel);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    padding: 2rem;
+    max-width: 860px;
+    margin: 2rem auto;
+  }
+  .cartao h2 { margin-top: 0; font-weight: 600; }
+  .cartao p.descricao { color: var(--tinta-suave); margin-bottom: 1.6rem; }
+  .erro {
+    background: var(--vermelho-fundo);
+    border: 1px solid var(--vermelho);
+    color: var(--vermelho);
+    border-radius: 6px;
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.2rem;
+  }
+  .zonas { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  .zona {
+    flex: 1 1 260px;
+    border: 2px dashed var(--borda);
+    border-radius: 8px;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .zona:hover, .zona.arrastando { border-color: var(--azul); background: #f5f8fd; }
+  .zona.preenchida { border-style: solid; border-color: var(--verde); background: var(--verde-fundo); }
+  .zona .rotulo { font-weight: 600; margin-bottom: 0.3rem; }
+  .zona .dica { color: var(--tinta-suave); font-size: 0.85rem; }
+  .zona .nome-arquivo {
+    margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600;
+    color: var(--verde); word-break: break-all;
+  }
+  .zona input[type="file"] { display: none; }
+  .acoes { margin-top: 1.6rem; text-align: center; }
+  button.principal {
+    background: var(--azul); color: #fff; border: none; border-radius: 6px;
+    font-size: 1rem; font-weight: 600; padding: 0.7rem 2.2rem; cursor: pointer;
+  }
+  button.principal:hover { background: #1e4e8c; }
+  button.principal:disabled { background: #a6a6a6; cursor: not-allowed; }
+
+  /* ---------- página de resultado ---------- */
+  .barra-resultado {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+  .barra-resultado .arquivos { font-size: 0.95rem; color: var(--tinta-suave); }
+  .barra-resultado .arquivos strong { color: var(--tinta); }
+  .distintivos { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-left: auto; }
+  .distintivo {
+    border-radius: 999px; padding: 0.25rem 0.8rem;
+    font-size: 0.85rem; font-weight: 600; border: 1px solid transparent;
+  }
+  .distintivo.add { background: var(--verde-fundo); color: var(--verde); border-color: var(--verde); }
+  .distintivo.del { background: var(--vermelho-fundo); color: var(--vermelho); border-color: var(--vermelho); }
+  .distintivo.alt { background: var(--ambar-fundo); color: #8a6d00; border-color: var(--ambar-barra); }
+
+  .legenda {
+    display: flex; gap: 1.2rem; flex-wrap: wrap;
+    font-size: 0.85rem; color: var(--tinta-suave); margin-bottom: 1rem;
+  }
+  .legenda .seg-del, .legenda .seg-add { padding: 0 0.2rem; }
+
+  .abas { display: flex; gap: 0.4rem; margin-bottom: 0; }
+  .abas button {
+    border: 1px solid var(--borda); border-bottom: none;
+    background: #faf9f8; color: var(--tinta-suave);
+    padding: 0.5rem 1.2rem; border-radius: 6px 6px 0 0;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  }
+  .abas button.ativa { background: var(--papel); color: var(--azul); }
+
+  .folha {
+    background: var(--papel);
+    border: 1px solid var(--borda);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 0 6px 6px 6px;
+    overflow-x: auto;
+  }
+  .visao { display: none; }
+  .visao.visivel { display: block; }
+
+  .documento { padding: 1.2rem 0; min-width: 100%; }
+  .linha { display: flex; align-items: baseline; }
+  .linha .num {
+    flex: 0 0 3.2rem; text-align: right; padding-right: 0.8rem;
+    color: #a19f9d; font-size: 0.75rem; user-select: none;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  .linha .conteudo {
+    flex: 1; padding: 0.1rem 1rem 0.1rem 0.4rem;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.88rem; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-word;
+    border-left: 3px solid transparent;
+  }
+  .linha .conteudo:empty::before { content: "\00a0"; }
+
+  /* marcação estilo Word: barra de revisão + cores */
+  .linha.del .conteudo { background: var(--vermelho-fundo); border-left-color: var(--vermelho); }
+  .linha.add .conteudo { background: var(--verde-fundo); border-left-color: var(--verde); }
+  .linha.alterada .conteudo { background: var(--ambar-fundo); border-left-color: var(--ambar-barra); }
+
+  .seg-del { color: var(--vermelho); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  .seg-add { color: var(--verde); text-decoration: underline; text-decoration-thickness: 1.5px; }
+
+  /* lado a lado */
+  table.duplo { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.duplo col.gutter { width: 3.2rem; }
+  table.duplo thead th {
+    text-align: left; font-size: 0.85rem; color: var(--tinta-suave);
+    padding: 0.6rem 1rem; border-bottom: 1px solid var(--borda);
+    background: #faf9f8; font-weight: 600;
+  }
+  table.duplo td { vertical-align: top; }
+  table.duplo td.num {
+    text-align: right; padding: 0.1rem 0.8rem 0.1rem 0;
+    color: #a19f9d; font-size: 0.75rem; user-select: none;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  table.duplo td.conteudo {
+    padding: 0.1rem 1rem 0.1rem 0.4rem;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.88rem; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-word;
+    border-left: 3px solid transparent;
+  }
+  table.duplo td.conteudo:empty::before { content: "\00a0"; }
+  table.duplo td.meio { border-left: 1px solid var(--borda); }
+  td.conteudo.del { background: var(--vermelho-fundo); border-left-color: var(--vermelho); }
+  td.conteudo.add { background: var(--verde-fundo); border-left-color: var(--verde); }
+  td.conteudo.alterada { background: var(--ambar-fundo); border-left-color: var(--ambar-barra); }
+  td.conteudo.vazia { background: repeating-linear-gradient(45deg, #fafafa, #fafafa 6px, #f1f1f1 6px, #f1f1f1 12px); }
+
+  .aviso-identicos {
+    background: var(--verde-fundo); border: 1px solid var(--verde); color: var(--verde);
+    border-radius: 6px; padding: 0.7rem 1rem; margin-bottom: 1rem; font-weight: 600;
+  }
+  a.voltar { color: var(--azul); font-weight: 600; text-decoration: none; }
+  a.voltar:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header class="topo">
+  <span class="logotipo">D</span>
+  <h1><a href="/">Comparador de Arquivos</a></h1>
+</header>
+<main>
+{% block conteudo %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>
